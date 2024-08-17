@@ -4,6 +4,10 @@
 #include <thread>
 #include <functional>
 #include <sys/signal.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 
 void callback() {
@@ -17,33 +21,56 @@ namespace asyncio {
     };
 
     namespace tcp {
+        
+        class endpoint {
+
+        public:
+            endpoint(std::string address, short port) {
+                server_addr.sin_family = AF_INET;
+                server_addr.sin_addr.s_addr = htonl(INADDR_ANY); //default address
+                server_addr.sin_port = htons(port);
+            }
+
+            endpoint(const char *address, short port);
+
+
+        private:
+            sockaddr_in server_addr;
+
+            std::string address;
+            short int port;
+        };
+
         class socket {
-            //this function is the main event loop that takes control of the main thread
+            typedef std::function<void(asyncio::error, int)> AsyncCallback;
+
+            void async_connect(tcp::endpoint endpoint) {
+                file_descriptor = ::socket(AF_INET, SOCK_STREAM, 0);
+
+                if(file_descriptor == -1) {
+                    //throw error
+                }
+
+
+
+            }
             
-            void async_read_some(char *buffer, int size, std::function<void(asyncio::error error, int bytes_transferred)> callback) {
+            void async_read_some(char *buffer, int size, AsyncCallback callback) {
 
             }
 
-            void async_write_some(char *buffer, int size) {
+            void async_write_some(char *buffer, int size, AsyncCallback callback) {
 
             }
 
             int file_descriptor = 0;    
         };
 
-        class endpoint {
-
-
-
-            std::string address;
-            short int port;
-        };
     }
 }
 
 
 int main() {
-
 
 
     return 0;
