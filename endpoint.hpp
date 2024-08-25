@@ -20,7 +20,10 @@ namespace asyncio {
         class endpoint {
         public:
 
-            endpoint(const endpoint &) = delete;
+            endpoint() {
+
+            }
+
 
             endpoint(short port) {
                 this->address = "127.0.0.1";
@@ -48,10 +51,8 @@ namespace asyncio {
                 server_addr.sin_port = htons(port);
             }   
 
-
-            std::string address;
-            short int port;
-        private:
+            std::string address = "";
+            short int port = 0;
             sockaddr_in server_addr;
         };
     }
