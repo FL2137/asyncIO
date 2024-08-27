@@ -28,7 +28,7 @@ namespace asyncio {
             endpoint(short port) {
                 this->address = "127.0.0.1";
                 this->port = port;
-                server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+                server_addr.sin_addr.s_addr = INADDR_ANY;
                 server_addr.sin_family = AF_INET;
                 server_addr.sin_port = htons(port);
             }
