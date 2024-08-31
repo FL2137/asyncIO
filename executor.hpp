@@ -5,67 +5,59 @@
 #include <functional>
 #include "error.hpp"
 #include <iostream>
+#include "event.hpp"
+#include <thread>
 
 
 namespace asyncio {
 
-enum EVENT_STATUS {
-    FINISHED = 0,
-    PENDING,
-    WORKING
-};
-
-enum EVENT_TYPE {
-    SYSTEM_IO = 0,
-    SOCKET_IO,
-};
-
-class event {
-public: 
-    typedef std::function<void(asyncio::error, int)> AsyncCallback;
-
-    event(std::string event_name, AsyncCallback event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
-        this->name = event_name;
-        this->handler = event_handler;
-        this->type = event_type;
-        if(event_type == SOCKET_IO) {
-            priority = 1;
-        }
-        else if(event_type == SYSTEM_IO) {
-            priority = 0;
-        }
-    }
-
-    operator bool() const{
-        if(status == PENDING)
-            return true;
-        return false;
-    }
-public:
-
-    int priority;
-
-
-private:
-    AsyncCallback handler;
-    EVENT_STATUS status;
-    EVENT_TYPE type;
-    std::string name;
-};
-
 class executor {
+
+    typedef std::function<void(void)> Callback;
 
     void event_loop() {
         while(1) {
-            
+            process_events();
+            sleep(1);
         }    
     }
 
 
+public:
+    void run() {
+        event_loop();
+    }
+
+    static void register_event(executor &exec, event event) {
+        exec.events.push_back(event);
+    }
+
+    void register_event(event event) {
+        events.push_back(event);
+    }
+
+    void run_thread(event event) {
+        std::thread worker_thread(&event::run, event);
+
+        worker_thread.detach();
+    }
+
+    void run_thread(Callback foo) {
+        auto lamb = []() {
+            std::cout << "peepee\n";
+        };
+
+        std::thread tr(lamb);   
+        tr.detach();
+        sleep(1);
+        if(!tr.joinable()) {
+            std::cout << "its detached u moron\n";
+        }
+    }
+
 private:
     std::deque<event> events;
     
-
     void process_events() {
         std::sort(events.begin(), events.end(), [](const event& lhs, const event& rhs) {
             if(lhs.priority >= rhs.priority)
@@ -73,11 +65,19 @@ private:
             else return false;
         });
 
-        for(event &ev : events) {
-            std::cout << ev.priority << std::endl;
-        }
-    }
+        // while(events.size()) {
+        //     std::cout << "Running new event...\n";
+        //     run_thread(events[0]);
+        //     //events.pop_front();
+        // }
+        for(auto event : events) {
+            if(event.status == PENDING) {
+                run_thread(event);
+            }
+        } 
 
+
+    }
 
 };
 }
