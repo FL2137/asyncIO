@@ -13,7 +13,7 @@ namespace tcp {
         typedef std::function<void(asyncio::error, int)> AsyncCallback;
 
     public:
-        acceptor(executor &exec, tcp::endpoint local_endpoint) : executor(exec) {
+        acceptor(executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
             fd = ::socket(AF_INET, SOCK_STREAM, 0);
             event error_event("ERROR_EVENT", error::error_callback, SOCKET_IO);
             error sock_error;
