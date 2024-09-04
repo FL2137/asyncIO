@@ -8,6 +8,7 @@
 #include "socket.hpp"
 
 namespace asyncio {
+namespace tcp {
     class acceptor {
         typedef std::function<void(asyncio::error, int)> AsyncCallback;
 
@@ -78,6 +79,7 @@ namespace asyncio {
         int n_acceptable_connections = 4;
 
     };
+}
 }
 
 
