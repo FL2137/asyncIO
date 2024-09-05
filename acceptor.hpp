@@ -7,22 +7,26 @@
 #include "event.hpp"
 #include "socket.hpp"
 
+#include <fcntl.h>
+
 namespace asyncio {
 namespace tcp {
     class acceptor {
         typedef std::function<void(asyncio::error, int)> AsyncCallback;
 
     public:
-        acceptor(executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
+        acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
             fd = ::socket(AF_INET, SOCK_STREAM, 0);
             event error_event("ERROR_EVENT", error::error_callback, SOCKET_IO);
             error sock_error;
+            std::cout << "ACCEPTOR LISTEN START\n";
 
             if(fd == -1) {
                 sock_error.set_error_message("Error occurred while creating the socket");
                 error_event.set_data(sock_error, -1);
                 executor.register_event(error_event);
                 close(fd);
+                std::cout << "ACCEPTOR LISTEN 1\n";
                 return;
             }
             int options = 1;
@@ -31,10 +35,25 @@ namespace tcp {
                 error_event.set_data(sock_error, -1);
                 executor.register_event(error_event);
                 close(fd);
+                std::cout << "ACCEPTOR LISTEN 2\n";
+                std::cout << errno << std::endl;
+
                 return;
             }
 
-            if(bind(fd, (const sockaddr*)&local_endpoint.server_addr, sizeof(local_endpoint.server_addr) == -1)) {
+            
+            struct sockaddr_in sockadd;
+            bzero((char*)&sockadd, sizeof(sockadd));
+
+            //sockadd.sin_addr.s_addr = INADDR_ANY;
+            //inet_pton(AF_INET, "127.0.0.1", &sockadd.sin_addr);
+            sockadd.sin_family = AF_INET;
+            sockadd.sin_addr.s_addr = INADDR_ANY;
+            int portno = 5001;
+            sockadd.sin_port = htons(portno);
+            
+
+            if(bind(fd, (struct sockaddr*)&sockadd, sizeof(sockadd)) != 0) {
                 sock_error.set_error_message("bind(): Error binding address to the socket");
                 error_event.set_data(sock_error, -1);
                 executor.register_event(error_event);
@@ -52,19 +71,29 @@ namespace tcp {
 
         }
 
-        void async_connect(tcp::socket &socket, AsyncCallback callback) {
+
+        ~acceptor() {
+            std::cout << "Acceptor destructor\n";
+            close(fd);
+        }
+
+        void async_accept(tcp::socket &socket, AsyncCallback callback) {
+            std::cout << "ACCEPTING...\n";
             socklen_t socklen;
             tcp::endpoint remote_endpoint;
             int new_fd = accept(fd, (sockaddr *)&remote_endpoint.server_addr, &socklen);            
             if(new_fd == -1) {
                 error sock_error;
                 event error_event("ERROR_EVENT", callback, SOCKET_IO);
-                sock_error.set_error_message("listen(): Error listening on the socket");
+                sock_error.set_error_message("accept(): Error accepting a new connection");
                 error_event.set_data(sock_error, -1);
                 executor.register_event(error_event);
                 close(new_fd);
                 close(fd);
+                return;
             }
+
+            std::cout << "Accepted from " << inet_ntoa(remote_endpoint.server_addr.sin_addr) << ":" << remote_endpoint.server_addr.sin_port << std::endl;
             error no_error;
             event accepted_event("ACCEPTED_CONN", callback, SOCKET_IO);
             
@@ -74,10 +103,9 @@ namespace tcp {
         }
 
     private:
-        executor &executor;
+        asyncio::executor &executor;
         int fd;
         int n_acceptable_connections = 4;
-
     };
 }
 }
