@@ -6,7 +6,7 @@
 #include "error.hpp"
 #include "event.hpp"
 #include "socket.hpp"
-
+#include <cstdlib>
 #include <fcntl.h>
 
 namespace asyncio {
@@ -40,20 +40,8 @@ namespace tcp {
 
                 return;
             }
-
             
-            struct sockaddr_in sockadd;
-            bzero((char*)&sockadd, sizeof(sockadd));
-
-            //sockadd.sin_addr.s_addr = INADDR_ANY;
-            //inet_pton(AF_INET, "127.0.0.1", &sockadd.sin_addr);
-            sockadd.sin_family = AF_INET;
-            sockadd.sin_addr.s_addr = INADDR_ANY;
-            int portno = 5001;
-            sockadd.sin_port = htons(portno);
-            
-
-            if(bind(fd, (struct sockaddr*)&sockadd, sizeof(sockadd)) != 0) {
+            if(bind(fd, (struct sockaddr*)&local_endpoint.server_addr, sizeof(local_endpoint.server_addr)) != 0) {
                 sock_error.set_error_message("bind(): Error binding address to the socket");
                 error_event.set_data(sock_error, -1);
                 executor.register_event(error_event);
@@ -68,7 +56,6 @@ namespace tcp {
                 close(fd);
                 return;
             }
-
         }
 
 
@@ -84,6 +71,7 @@ namespace tcp {
             int new_fd = accept(fd, (sockaddr *)&remote_endpoint.server_addr, &socklen);            
             if(new_fd == -1) {
                 error sock_error;
+                std::cout << "ACCEPT ERROR ERRNO: " << errno << std::endl;
                 event error_event("ERROR_EVENT", callback, SOCKET_IO);
                 sock_error.set_error_message("accept(): Error accepting a new connection");
                 error_event.set_data(sock_error, -1);
