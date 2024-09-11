@@ -24,9 +24,6 @@ class executor {
     typedef std::function<void(void)> Callback;
 
     void event_loop() {
-        signal(SIGINT, [](int){
-            std::cout << "LOL\n";
-            executor::runner = false;});
 
         while(runner) {
             process_events();
@@ -36,6 +33,9 @@ class executor {
 public:
 
     executor() {
+        signal(SIGINT, [](int){
+            executor::runner = false;});
+     
         epoll_fd = epoll_create(EPOLL_COUNT);
     }
 
@@ -85,20 +85,26 @@ private:
         //     run_thread(events[0]);
         //     //events.pop_front();
         // }
+        // for(auto &event : events) {
+        //     if(event.status == PENDING) {
+        //         event.status = WORKING;
+        //         std::cout << event.name <<std::endl;
+        //         run_thread(event);
+        //     }
+        //     else {
+        //         std::cout << event.name << " " << events.size() << std::endl;
+        //     }
+        // } 
 
 
 
+        //epoll events
+        int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, -1);
+        for(int i = 0; i < epoll_nfds; i++) {
+            
+        }
 
-        for(auto &event : events) {
-            if(event.status == PENDING) {
-                event.status = WORKING;
-                std::cout << event.name <<std::endl;
-                run_thread(event);
-            }
-            else {
-                std::cout << event.name << " " << events.size() << std::endl;
-            }
-        } 
+
     }
 
 
