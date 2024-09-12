@@ -56,8 +56,8 @@ namespace tcp {
                 close(fd);
                 return;
             }
-        }
 
+        }
 
         ~acceptor() {
             std::cout << "Acceptor destructor\n";
@@ -86,6 +86,7 @@ namespace tcp {
             event accepted_event("ACCEPTED_CONN", callback, SOCKET_IO);
             
             socket.file_descriptor = new_fd;
+
             accepted_event.set_data(no_error, 0);
             executor.register_event(accepted_event);
         }
