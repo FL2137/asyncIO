@@ -7,7 +7,7 @@
 namespace asyncio {
 
 enum EVENT_STATUS {
-    FINISHED = 0,
+    COMPLETED = 0,
     PENDING,
     WORKING
 };
@@ -29,9 +29,10 @@ public:
 };
 
 class Token {
+    static int id;
     public:
     Token(){}
-    bool state;
+    bool completed = false;
     std::string event_name;
 };
 
