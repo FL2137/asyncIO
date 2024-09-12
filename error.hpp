@@ -9,7 +9,7 @@ namespace asyncio {
     public:
 
         const char* what() {
-            return "what?";
+            return message.c_str();
         }
 
         void set_error_message(const char* new_message) {
@@ -23,6 +23,11 @@ namespace asyncio {
         bool isError() {
             return !message.empty();
         }
+
+        static void error_callback(asyncio::error error, int nbytes) {
+            std::cout << error.what() << std::endl;
+        }
+        
 
     private:
         std::string message = "";    

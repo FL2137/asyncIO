@@ -4,28 +4,40 @@
 #include <string>
 #include <functional>
 #include <iostream>
+#include <thread>
 #include "executor.hpp"
 #include "event.hpp"
+#include <math.h>
+#include <time.h>
 
 class Tester {
     public:
     Tester(asyncio::executor &exec) : exec(exec) {
         std::function<void(void)> handler = std::bind(&Tester::parent_call, this);
-        asyncio::event ev("TEST_EVENT", handler);
-        ev.priority = 2;
+        asyncio::event ev("TEST_PARENT_EVENT", handler, asyncio::SYSTEM_IO);
         asyncio::executor::register_event(exec, ev);
+        std::cout << "Registered parent event \n";
     }
 
 
     void parent_call() {
+        std::cout << "Running parent event \n";
 
-        std::cout << "Parent call\n";
+        srand(time(NULL));
+        int sum = 0;
+        for(int i = 0; i < 10; i++) {
+            sum += rand() % 15;
+            std::cout << "PARENT EVENT: " << i+1 << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
 
-        std::function<void(void)> child_call = [](){
-            std::cout << "child call\n";
+        std::function<void(asyncio::error, int)> child_call = [](asyncio::error error, int nbytes){
+            std::cout << "CHILD: PARAM-" << nbytes << std::endl;
         };
+        asyncio::event ev("TEST_CHILD_CALL", child_call);
+        asyncio::error er;
 
-        asyncio::event ev("TEST_PARENT_CALL", child_call);
+        ev.set_data(er, sum);
 
         exec.register_event(ev);
     }
