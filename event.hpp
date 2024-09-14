@@ -29,11 +29,15 @@ public:
 };
 
 class Token {
+public:
     static int id;
     public:
     Token(){}
     bool completed = false;
     std::string event_name;
+    char* buffer;
+    int buffer_size;
+
 };
 
 
@@ -102,9 +106,9 @@ private:
 
     AsyncCallback handler;
     
-
     Callback call;
     EVENT_TYPE type;
+
 };
 
 }
