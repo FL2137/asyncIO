@@ -62,6 +62,15 @@ class WriteToken : public Callback {
 
     }
 
+    void set_data(asyncio::error _error, int _nbytes) {
+        m_error = _error;
+        m_nbytes = _nbytes;
+    }
+
+
+private:
+    asyncio::error m_error;
+    int m_nbytes;
     IO_Signature functor;
 };
     
