@@ -21,40 +21,47 @@ namespace asyncio {
                 close(file_descriptor);
             }
 
-            void async_connect(tcp::endpoint endpoint, AsyncCallback callback) {
-                //event ev("ASYNC_CONNECT_EVENT", callback);
-                //ev.priority;
-                //ev.set_child()
-                //executor::register_event(executor, ev);
-            }
-
             void async_read_some(char *buffer, int size, AsyncCallback callback) {
-                int result = read(file_descriptor, buffer, size);
-                asyncio::error error;
-                if(result == -1) {
-                    error.set_error_message("Socket read error");
-                }
-                asyncio::event event("ASYNC_READ", callback, EVENT_TYPE::SOCKET_IO);
-                event.set_data(error, result);
-                executor.register_event(event);
+                read_buffer = buffer;
+                read_size = size;
+                ReadToken *read_token = new ReadToken(callback, asyncio::error(), 0);
+                executor.register_callback(file_descriptor, read_token);
             }
 
             void async_write_some(char *buffer, int size, AsyncCallback callback) {
-                int result = write(file_descriptor, buffer, strlen(buffer));
-                asyncio::error error;
-                if(result == -1) {
-                    error.set_error_message("write() Error writing to socket");
+                write_buffer = buffer;
+                write_size = size;
+                WriteToken *write_token = new WriteToken(callback);
+                executor.register_callback(file_descriptor, write_token);
+            }   
+
+
+            void implementation(int socket_fd, bool read_flag = true) {
+                if(read_flag) {
+                    read()
                 }
-                asyncio::event event("ASYNC_WRITE", callback, EVENT_TYPE::SOCKET_IO);
-                event.set_data(error, result);
-                executor.register_event(event);
+                else { //write
+
+                }
             }
 
         public:
             int file_descriptor = 0;    
+
+            epoll_event epoll_read_event;
+            epoll_event epoll_write_event;
+
+
+
+            std::shared_ptr<void> read_callback;
+
         private:
             asyncio::executor &executor;
             tcp::endpoint ep;
+            char *read_buffer;
+            char *write_buffer;
+            int read_size;
+            int write_size;
         };
 
     }
