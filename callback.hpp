@@ -58,8 +58,10 @@ private:
 
 
 class WriteToken : public Callback {
-    WriteToken(IO_Signature completion_handler) {
+public:
 
+    WriteToken(IO_Signature completion_handler) {
+        functor = completion_handler;
     }
 
     void set_data(asyncio::error _error, int _nbytes) {
@@ -73,6 +75,24 @@ private:
     int m_nbytes;
     IO_Signature functor;
 };
+
+typedef std::function<void(asyncio::error)> Accept_Signature;
+
+class AcceptToken : public Callback {
+
+public:
+    AcceptToken(Accept_Signature completion_handler) {
+        this->functor = completion_handler;
+    }
+    void set_data(asyncio::error _error) {
+        this->m_error = _error;
+    }
+
+private:
+    asyncio::error m_error;
+    Accept_Signature functor;
+};
+
     
 void runXd() {  
     std::vector<Callback*> vec = {};
