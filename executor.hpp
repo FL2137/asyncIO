@@ -14,14 +14,13 @@
 #include <sys/epoll.h>
 #include <mutex>
 #include <shared_mutex>
+#include "callback.hpp"
 
 #define EPOLL_COUNT 50
 
 namespace asyncio {
 
 class executor {
-
-    typedef std::function<void(void)> Callback;
 
     void event_loop() {
 
@@ -57,6 +56,11 @@ public:
         events.push_back(event);
     }
 
+
+    void register_callback(int caller, Callback *callback) {
+        callback_m[caller] = callback;
+    }
+
     void run_thread(event event) {
         auto token = std::make_shared<Token>();
         token->event_name = event.name;
@@ -72,6 +76,9 @@ private:
     epoll_event epoll_events[EPOLL_COUNT];
     std::vector<event> events;
     std::map<event, std::shared_ptr<Token>> tokens;
+
+    std::map<int, Callback*> callback_m;
+
 
     void process_events() {
         // std::sort(events.begin(), events.end(), [](const event& lhs, const event& rhs) {
@@ -102,6 +109,10 @@ private:
         int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, -1);
         for(int i = 0; i < epoll_nfds; i++) {
             
+            callback_m[i]->call();
+
+
+
         }
 
 

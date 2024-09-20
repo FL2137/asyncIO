@@ -1,2 +1,2 @@
 all:
-	g++ main.cpp -o a.out -lncurses
+	g++ main.cpp -W -o a.out -lncurses

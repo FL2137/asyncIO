@@ -64,7 +64,7 @@ namespace tcp {
             close(fd);
         }
 
-        void async_accept(tcp::socket &socket, AsyncCallback callback) {
+        void async_accept(tcp::socket &socket, Accept_Signature callback) {
             // std::cout << "ACCEPTING...\n";
             // socklen_t socklen;
             // tcp::endpoint remote_endpoint;
@@ -91,11 +91,22 @@ namespace tcp {
             // executor.register_event(accepted_event);
 
 
+            AcceptToken *accept_token = new AcceptToken(callback);
 
-            executor.register_callback()
+            executor.register_callback(fd, accept_token);
+
+        }
 
 
 
+
+        static void implementation(int acceptor_fd, tcp::endpoint &remote_endpoint) {
+            socklen_t socklen;
+            int newfd = accept(acceptor_fd, (sockaddr*)&remote_endpoint.server_addr, &socklen);
+            if(newfd == -1) {
+                asyncio::error error;
+                
+            }
         }
 
     private:

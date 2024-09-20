@@ -19,6 +19,7 @@
 #include "tester.hpp"
 #include "acceptor.hpp"
 #include "tui.hpp"
+#include "callback.hpp"
 
 void srrr() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -171,44 +172,47 @@ struct xd {
 
 typedef void (*callback)(asyncio::error, int);
 
-
-std::map<int, callback> callback_map;
+//std::map<int, callback> callback_map;
 
 void read_callback(asyncio::error error, int nbytes) {
-
+    std::cout << "READ CLB\n";
 }
 
 void write_callback(asyncio::error error, int callback) {
-
+    std::cout << "WRITE CLB\n";
 }
 
-void connect_callback(asyncio::error error, int nbytes) {
+void accept_callback(asyncio::error error, int nbytes) {
 
+
+    std::cout << "ACCEPT CLB\n";
 }
+
+typedef std::function<void(asyncio::error, int)> Clb;
 
 
 int main() {
+
+    std::map<int, Clb> clb_map;
+    clb_map[0] = write_callback;
+
+
+    exit(-1);
     int efd = epoll_create(5);
     epoll_event eevents[5];
     epoll_event eevent;
     int serverfd = bindListen();
     eevent.data.fd = serverfd;
     eevent.events = EPOLLIN | EPOLLET;
+    clb_map[serverfd] = accept_callback;
 
     epoll_ctl(efd, EPOLL_CTL_ADD, serverfd, &eevent);
     
-
     while(1) {
         int nfds = epoll_wait(efd, eevents, 5, -1);
 
         for(int i = 0; i < nfds; i++) {
-            
-            if(eevents[i].data.fd == serverfd) {
-                
-            }
-            
-            
-            
+            clb_map[i](asyncio::error(), 15);
         }
     }
 
