@@ -38,10 +38,20 @@ namespace asyncio {
 
             void implementation(int socket_fd, bool read_flag = true) {
                 if(read_flag) {
-                    read()
+                    int result = read(socket_fd, read_buffer, read_size);
+                    if(result == -1) {
+                        asyncio::error error;
+                        error.set_error_message("ERROR READING ON SOCKET");
+
+
+                    }
                 }
                 else { //write
-
+                    int result = write(socket_fd, read_buffer, read_size);
+                    if(result == -1) {
+                        asyncio::error error;
+                        error.set_error_message("ERROR WRITING TO A SOCKET");
+                    }
                 }
             }
 
