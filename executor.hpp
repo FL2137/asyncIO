@@ -57,10 +57,6 @@ public:
     }
 
 
-    void register_callback(int caller, Callback *callback) {
-        callback_m[caller] = callback;
-    }
-
     void run_thread(event event) {
         auto token = std::make_shared<Token>();
         token->event_name = event.name;
@@ -77,7 +73,6 @@ private:
     std::vector<event> events;
     std::map<event, std::shared_ptr<Token>> tokens;
 
-    std::map<int, Callback*> callback_m;
 
 
     void process_events() {
@@ -108,11 +103,6 @@ private:
         //epoll events
         int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, -1);
         for(int i = 0; i < epoll_nfds; i++) {
-            
-            callback_m[i]->call();
-
-
-
         }
 
 
