@@ -21,18 +21,16 @@ namespace asyncio {
                 close(file_descriptor);
             }
 
-            void async_read_some(char *buffer, int size, AsyncCallback callback) {
+            void async_read_some(char *buffer, int size, IO_Signature callback) {
                 read_buffer = buffer;
                 read_size = size;
                 ReadToken *read_token = new ReadToken(callback, asyncio::error(), 0);
-                executor.register_callback(file_descriptor, read_token);
             }
 
-            void async_write_some(char *buffer, int size, AsyncCallback callback) {
+            void async_write_some(char *buffer, int size, IO_Signature callback) {
                 write_buffer = buffer;
                 write_size = size;
                 WriteToken *write_token = new WriteToken(callback);
-                executor.register_callback(file_descriptor, write_token);
             }   
 
 
@@ -61,9 +59,8 @@ namespace asyncio {
             epoll_event epoll_read_event;
             epoll_event epoll_write_event;
 
-
-
-            std::shared_ptr<void> read_callback;
+            std::shared_ptr<WriteToken> write_callback;
+            std::shared_ptr<ReadToken> read_callback;
 
         private:
             asyncio::executor &executor;
@@ -75,8 +72,6 @@ namespace asyncio {
         };
 
     }
-}
-
-
+};
 
 #endif 
