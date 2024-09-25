@@ -56,6 +56,10 @@ public:
         events.push_back(event);
     }
 
+    void register_epoll(epoll_event &event) {
+        
+    }
+
 
     void run_thread(event event) {
         auto token = std::make_shared<Token>();
