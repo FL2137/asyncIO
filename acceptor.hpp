@@ -56,7 +56,9 @@ namespace tcp {
                 close(fd);
                 return;
             }
-
+            epoll_event ev;
+            ev.events = EPOLLIN;
+            ev.data.fd = fd;
         }
 
         ~acceptor() {
@@ -89,12 +91,8 @@ namespace tcp {
 
             // accepted_event.set_data(no_error, 0);
             // executor.register_event(accepted_event);
-
-
-            AcceptToken *accept_token = new AcceptToken(callback);
-
-            executor.register_callback(fd, accept_token);
-
+            
+            //executor.register_event()
         }
 
 
@@ -110,6 +108,7 @@ namespace tcp {
         }
 
     private:
+        Accept_Signature accept_callback;
         asyncio::executor &executor;
         int fd;
         int n_acceptable_connections = 4;
