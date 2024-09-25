@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include "error.hpp"
+#include "callback.hpp"
 
 namespace asyncio {
 
@@ -43,12 +44,10 @@ public:
 
 class event {
 public: 
-    typedef std::function<void(asyncio::error, int)> AsyncCallback;
-    typedef std::function<void(void)> Callback;
 
-    event(std::string event_name, AsyncCallback event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
+    event(std::string event_name, Callback event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
         this->name = event_name;
-        this->handler = event_handler;
+        this->callback = event_handler;
         this->type = event_type;
         if(event_type == SOCKET_IO) {
             priority = 1;
@@ -60,7 +59,7 @@ public:
 
     event(std::string event_name, Callback empty_callback, EVENT_TYPE event_type = EVENT_TYPE::SYSTEM_IO) {
         this->name = event_name;
-        this->call = empty_callback;
+        this->callback = empty_callback;
         this->type = event_type;
     }
 
@@ -72,12 +71,7 @@ public:
 
     void run() {
         status = WORKING;
-        if(type == SYSTEM_IO) {
-            call();
-        }
-        else if(type == SOCKET_IO) {
-            handler(child_error, child_nbytes);
-        }
+        callback.call();
     }
 
     operator bool() const{
@@ -104,9 +98,7 @@ private:
     asyncio::error child_error;
     int child_nbytes = -1;
 
-    AsyncCallback handler;
-    
-    Callback call;
+    Callback callback;
     EVENT_TYPE type;
 
 };
