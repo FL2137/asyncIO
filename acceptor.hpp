@@ -17,23 +17,15 @@ namespace tcp {
     public:
         acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
             fd = ::socket(AF_INET, SOCK_STREAM, 0);
-            event error_event("ERROR_EVENT", error::error_callback, SOCKET_IO);
-            error sock_error;
             std::cout << "ACCEPTOR LISTEN START\n";
 
             if(fd == -1) {
-                sock_error.set_error_message("Error occurred while creating the socket");
-                error_event.set_data(sock_error, -1);
-                executor.register_event(error_event);
                 close(fd);
                 std::cout << "ACCEPTOR LISTEN 1\n";
                 return;
             }
             int options = 1;
             if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &options, sizeof(options))) {
-                sock_error.set_error_message("setsockopt(): Error occurred while setting socket options");
-                error_event.set_data(sock_error, -1);
-                executor.register_event(error_event);
                 close(fd);
                 std::cout << "ACCEPTOR LISTEN 2\n";
                 std::cout << errno << std::endl;
@@ -42,17 +34,11 @@ namespace tcp {
             }
             
             if(bind(fd, (struct sockaddr*)&local_endpoint.server_addr, sizeof(local_endpoint.server_addr)) != 0) {
-                sock_error.set_error_message("bind(): Error binding address to the socket");
-                error_event.set_data(sock_error, -1);
-                executor.register_event(error_event);
                 close(fd);
                 return;
             }
 
             if(listen(fd, n_acceptable_connections) == -1) {
-                sock_error.set_error_message("listen(): Error listening on the socket");
-                error_event.set_data(sock_error, -1);
-                executor.register_event(error_event);
                 close(fd);
                 return;
             }
