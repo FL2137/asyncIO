@@ -76,7 +76,7 @@ public:
 
 
     void start_accepting() {
-        acceptor.async_accept(socket, [&](asyncio::error error, int nbytes) {
+        acceptor.async_accept(socket, [&](asyncio::error error) {
             if(error.isError()){
                 std::cout << error.what() << ": " << errno << std::endl;
                 std::cout << "FD: " << nbytes << std::endl;
@@ -170,31 +170,8 @@ struct xd {
 };
 
 
-typedef void (*callback)(asyncio::error, int);
-
-//std::map<int, callback> callback_map;
-
-void read_callback(asyncio::error error, int nbytes) {
-    std::cout << "READ CLB\n";
-}
-
-void write_callback(asyncio::error error, int callback) {
-    std::cout << "WRITE CLB\n";
-}
-
-void accept_callback(asyncio::error error, int nbytes) {
-
-
-    std::cout << "ACCEPT CLB\n";
-}
-
-typedef std::function<void(asyncio::error, int)> Clb;
-
 
 int main() {
-
-    std::map<int, Clb> clb_map;
-    clb_map[0] = write_callback;
 
 
     exit(-1);
@@ -204,7 +181,6 @@ int main() {
     int serverfd = bindListen();
     eevent.data.fd = serverfd;
     eevent.events = EPOLLIN | EPOLLET;
-    clb_map[serverfd] = accept_callback;
 
     epoll_ctl(efd, EPOLL_CTL_ADD, serverfd, &eevent);
     
@@ -212,7 +188,6 @@ int main() {
         int nfds = epoll_wait(efd, eevents, 5, -1);
 
         for(int i = 0; i < nfds; i++) {
-            clb_map[i](asyncio::error(), 15);
         }
     }
 
