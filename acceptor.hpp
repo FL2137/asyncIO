@@ -53,40 +53,16 @@ namespace tcp {
         }
 
         void async_accept(tcp::socket &socket, Accept_Signature callback) {
-            // std::cout << "ACCEPTING...\n";
-            // socklen_t socklen;
-            // tcp::endpoint remote_endpoint;
-            // int new_fd = accept(fd, (sockaddr *)&remote_endpoint.server_addr, &socklen);            
-            // if(new_fd == -1) {
-            //     error sock_error;
-            //     std::cout << "ACCEPT ERROR ERRNO: " << errno << std::endl;
-            //     event error_event("ERROR_EVENT", callback, SOCKET_IO);
-            //     sock_error.set_error_message("accept(): Error accepting a new connection");
-            //     error_event.set_data(sock_error, -1);
-            //     executor.register_event(error_event);
-            //     close(new_fd);
-            //     close(fd);
-            //     return;
-            // }
-
-            // std::cout << "Accepted from " << inet_ntoa(remote_endpoint.server_addr.sin_addr) << ":" << remote_endpoint.server_addr.sin_port << std::endl;
-            // error no_error;
-            // event accepted_event("ACCEPTED_CONN", callback, SOCKET_IO);
             
-            // socket.file_descriptor = new_fd;
-
-            // accepted_event.set_data(no_error, 0);
-            // executor.register_event(accepted_event);
             
-            //executor.register_event()
+            this->tcp_socket = &socket;
         }
 
 
-
-
-        static void implementation(int acceptor_fd, tcp::endpoint &remote_endpoint) {
+        void implementation() {
             socklen_t socklen;
-            int newfd = accept(acceptor_fd, (sockaddr*)&remote_endpoint.server_addr, &socklen);
+            sockaddr_in remote_endpoint;
+            int newfd = accept(fd, (sockaddr*)&remote_endpoint, &socklen);
             if(newfd == -1) {
                 asyncio::error error;
                 
@@ -96,6 +72,7 @@ namespace tcp {
     private:
         Accept_Signature accept_callback;
         asyncio::executor &executor;
+        tcp::socket *tcp_socket;
         int fd;
         int n_acceptable_connections = 4;
     };
