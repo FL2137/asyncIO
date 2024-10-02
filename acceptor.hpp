@@ -53,8 +53,7 @@ namespace tcp {
         }
 
         void async_accept(tcp::socket &socket, Accept_Signature callback) {
-            
-            
+            accept_token.functor = callback;
             this->tcp_socket = &socket;
         }
 
@@ -65,12 +64,17 @@ namespace tcp {
             int newfd = accept(fd, (sockaddr*)&remote_endpoint, &socklen);
             if(newfd == -1) {
                 asyncio::error error;
-                
+                close(newfd);
+                return;
             }
+            std::cout << "Accepted! \n";
+            fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK); //set the socket descriptor to be nonblocking
+            tcp_socket->fd = newfd;
         }
 
     private:
         Accept_Signature accept_callback;
+        AcceptToken accept_token;
         asyncio::executor &executor;
         tcp::socket *tcp_socket;
         int fd;
