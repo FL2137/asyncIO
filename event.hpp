@@ -18,17 +18,6 @@ enum EVENT_TYPE {
     SOCKET_IO,
 };
 
-
-template <typename T>
-class promise {
-public:
-    promise() {
-
-    }
-
-    T result;
-};
-
 class Token {
 public:
     static int id;
@@ -55,12 +44,6 @@ public:
         else if(event_type == SYSTEM_IO) {
             priority = 0;
         }
-    }
-
-    event(std::string event_name, Callback empty_callback, EVENT_TYPE event_type = EVENT_TYPE::SYSTEM_IO) {
-        this->name = event_name;
-        this->callback = empty_callback;
-        this->type = event_type;
     }
 
     void set_data(asyncio::error error, int nbytes) {
