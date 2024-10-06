@@ -5,8 +5,6 @@
 #include <memory>
 #include <iostream>
 
-
-
 namespace asyncio {
 typedef std::function<void(asyncio::error, int)> IO_Signature; 
 
@@ -69,7 +67,6 @@ public:
         m_nbytes = _nbytes;
     }
 
-
 private:
     asyncio::error m_error;
     int m_nbytes;
@@ -81,6 +78,9 @@ typedef std::function<void(asyncio::error)> Accept_Signature;
 class AcceptToken : public Callback {
 
 public:
+
+    AcceptToken() {}
+
     AcceptToken(Accept_Signature completion_handler) {
         this->functor = completion_handler;
     }
@@ -88,20 +88,9 @@ public:
         this->m_error = _error;
     }
 
+    Accept_Signature functor;
 private:
     asyncio::error m_error;
-    Accept_Signature functor;
 };
-
-    
-void runXd() {  
-    std::vector<Callback*> vec = {};
-    ReadToken rt(
-    [](asyncio::error error, int nbytes)
-        {
-            std::cout << "Derived class FNCTOR\n";
-        }, asyncio::error(), 15);
-}
-
 
 }
