@@ -17,7 +17,6 @@ namespace tcp {
     public:
         acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
             fd = ::socket(AF_INET, SOCK_STREAM, 0);
-            std::cout << "ACCEPTOR LISTEN START\n";
 
             if(fd == -1) {
                 close(fd);
@@ -42,39 +41,55 @@ namespace tcp {
                 close(fd);
                 return;
             }
-            epoll_event ev;
-            ev.events = EPOLLIN;
-            ev.data.fd = fd;
+            std::cout << "Acceptor constructed\n";
+           
         }
 
         ~acceptor() {
             std::cout << "Acceptor destructor\n";
+            delete impl_callback;
             close(fd);
         }
 
         void async_accept(tcp::socket &socket, Accept_Signature callback) {
             accept_token.functor = callback;
             this->tcp_socket = &socket;
-        }
 
+            epoll_accept_event.events = EPOLLIN | EPOLLET;
+            epoll_accept_event.data.fd = fd;
+            epoll_accept_event.data.u32 = executor::callback_id;
+
+            executor.register_epoll(epoll_accept_event);
+            std::cout << "CURRENT CALLBACK ID: " << executor::callback_id << std::endl;
+            impl_callback = new Callback();
+            impl_callback->functor = std::bind(&acceptor::implementation, this);
+            executor.register_callback(impl_callback);
+        }
 
         void implementation() {
             socklen_t socklen;
             sockaddr_in remote_endpoint;
             int newfd = accept(fd, (sockaddr*)&remote_endpoint, &socklen);
+            asyncio::error error;
             if(newfd == -1) {
-                asyncio::error error;
+                error.set_error_message("Accept error");
                 close(newfd);
-                return;
             }
-            std::cout << "Accepted! \n";
-            fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK); //set the socket descriptor to be nonblocking
-            tcp_socket->fd = newfd;
+            else {
+                fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK); //set the socket descriptor to be nonblocking
+                tcp_socket->fd = newfd;
+            }            
+            std::cout << "HERE\n";
+            accept_callback(error);
+            std::cout << "HERE 2\n";
         }
 
     private:
+        Callback *impl_callback;
+
         Accept_Signature accept_callback;
         AcceptToken accept_token;
+        epoll_event epoll_accept_event;
         asyncio::executor &executor;
         tcp::socket *tcp_socket;
         int fd;
