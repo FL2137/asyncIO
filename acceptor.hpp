@@ -43,6 +43,11 @@ namespace tcp {
             }
             std::cout << "Acceptor constructed\n";
            
+            // int r = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+            // if(r == -1) {
+            //     std::cout << "ERROR SETTING NONBLOCK ON ACCPET SOCKET\n";
+            // }
+
         }
 
         ~acceptor() {
@@ -53,13 +58,14 @@ namespace tcp {
 
         void async_accept(tcp::socket &socket, Accept_Signature callback) {
             accept_token.functor = callback;
+            accept_callback = callback;
             this->tcp_socket = &socket;
 
             epoll_accept_event.events = EPOLLIN | EPOLLET;
             epoll_accept_event.data.fd = fd;
             epoll_accept_event.data.u32 = executor::callback_id;
-
-            executor.register_epoll(epoll_accept_event);
+            
+            executor.register_epoll(fd, epoll_accept_event);
             std::cout << "CURRENT CALLBACK ID: " << executor::callback_id << std::endl;
             impl_callback = new Callback();
             impl_callback->functor = std::bind(&acceptor::implementation, this);
@@ -72,11 +78,14 @@ namespace tcp {
             int newfd = accept(fd, (sockaddr*)&remote_endpoint, &socklen);
             asyncio::error error;
             if(newfd == -1) {
-                error.set_error_message("Accept error");
+                error.set_error_message("Accept error: " + std::to_string(errno));
                 close(newfd);
             }
             else {
-                fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK); //set the socket descriptor to be nonblocking
+                //set the socket descriptor to be nonblocking
+                // if(fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK) == -1) {
+                //     std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
+                // }
                 tcp_socket->fd = newfd;
             }            
             std::cout << "HERE\n";
