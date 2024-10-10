@@ -23,15 +23,19 @@ namespace asyncio {
 class executor {
 
     void event_loop() {
-
+        int i = 0;
         while(runner) {
             process_events();
+            i++;
         }    
     }
 
 public:
 
+    inline static int callback_id = 0;
+
     executor() {
+
         signal(SIGINT, [](int){
             executor::runner = false;});
      
@@ -56,18 +60,39 @@ public:
         events.push_back(event);
     }
 
-    void register_epoll(epoll_event &event) {
-        
+    void register_epoll(int fd, epoll_event &event) {
+        int result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
+        if(result == -1 )
+            std::cout << "epoll_ctl() error: " << errno << std::endl;
+        else
+            std::cout << "REGISTERED: " << event.data.fd << std::endl;
     }
 
+    void register_epoll(epoll_event *event) {
+        int result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, event->data.fd, event);
+        if(result == -1 ){
+            std::cout << "epoll_ctl() error\n";
+        }
+        else
+            std::cout << "REGISTERED: " << event->data.fd << std::endl;
+    }
+
+    void register_callback(Callback *callback) {
+        callback_map[executor::callback_id] = callback;
+        executor::callback_id++;
+    }
 
     void run_thread(event event) {
         auto token = std::make_shared<Token>();
         token->event_name = event.name;
         event.set_token(token);
         //tokens[reinterpret_cast<int32_t>(&event)] = token;
-
         std::thread worker_thread(&event::run, event);
+        worker_thread.detach();
+    }
+
+    void run_thread(Callback *callback) {
+        std::thread worker_thread(&Callback::call, callback);
         worker_thread.detach();
     }
 
@@ -76,8 +101,7 @@ private:
     epoll_event epoll_events[EPOLL_COUNT];
     std::vector<event> events;
     std::map<event, std::shared_ptr<Token>> tokens;
-
-
+    std::map<signed int, Callback*> callback_map;
 
     void process_events() {
         // std::sort(events.begin(), events.end(), [](const event& lhs, const event& rhs) {
@@ -101,15 +125,22 @@ private:
         //         std::cout << event.name << " " << events.size() << std::endl;
         //     }
         // } 
-
-
-
         //epoll events
-        int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, -1);
-        for(int i = 0; i < epoll_nfds; i++) {
+        std::cout << "epoll waiting....\n";
+        int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, 10);
+        if(epoll_nfds == -1) {
+            std::cout << "epoll_wait() error: " << errno << std::endl;
         }
+        else {
+            std::cout << "EVENT COUNT: " << epoll_nfds << std::endl;
+            std::cout << epoll_events[0].data.fd 
+                      << " -- " << epoll_events[0].data.u32 << std::endl;
+        }
+        std::cout << "epoll started\n";
 
-
+        for(int i = 0; i < epoll_nfds; i++) {
+            run_thread(callback_map[epoll_events[i].data.u32]);
+        }
     }
 
 
