@@ -96,6 +96,10 @@ public:
         worker_thread.detach();
     }
 
+    void enqueue_callback(Callback *callback) { 
+        this->queue.push_back(callback);
+    }
+
 private:
     int epoll_fd = 0;
     epoll_event epoll_events[EPOLL_COUNT];
@@ -103,6 +107,8 @@ private:
     std::map<event, std::shared_ptr<Token>> tokens;
     std::map<signed int, Callback*> callback_map;
 
+    std::vector<Callback*> queue = {};
+    
     void process_events() {
         // std::sort(events.begin(), events.end(), [](const event& lhs, const event& rhs) {
         //     if(lhs.priority >= rhs.priority)
@@ -125,22 +131,37 @@ private:
         //         std::cout << event.name << " " << events.size() << std::endl;
         //     }
         // } 
+
         //epoll events
-        std::cout << "epoll waiting....\n";
-        int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, 10);
-        if(epoll_nfds == -1) {
-            std::cout << "epoll_wait() error: " << errno << std::endl;
-        }
-        else {
-            std::cout << "EVENT COUNT: " << epoll_nfds << std::endl;
-            std::cout << epoll_events[0].data.fd 
-                      << " -- " << epoll_events[0].data.u32 << std::endl;
-        }
-        std::cout << "epoll started\n";
+        // std::cout << "epoll waiting....\n";
+        // if(epoll_nfds == -1) {
+        //     std::cout << "epoll_wait() error: " << errno << std::endl;
+        // }
+        // else {
+        //     std::cout << "EVENT COUNT: " << epoll_nfds << std::endl;
+        //     std::cout << epoll_events[0].data.fd 
+        //               << " -- " << epoll_events[0].data.u32 << std::endl;
+        // }
+        // std::cout << "epoll started\n";
+        
+        
+        int epoll_nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, 5);
 
         for(int i = 0; i < epoll_nfds; i++) {
-            run_thread(callback_map[epoll_events[i].data.u32]);
+            //run_thread(callback_map[epoll_events[i].data.u32]);
+            //instead of running ^^ register the callback to happen
+            queue.push_back(callback_map[epoll_events[i].data.u32]);
         }
+
+
+
+        for(auto callb : queue) {
+            callb->call();
+        }
+    }
+
+    void run_epoll() {
+
     }
 
 
