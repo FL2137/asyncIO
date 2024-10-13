@@ -18,49 +18,33 @@ namespace asyncio {
             }
 
             ~socket() {
-                close(file_descriptor);
+                close(fd);
             }
 
             void async_read_some(char *buffer, int size, IO_Signature callback) {
-                read_buffer = buffer;
-                read_size = size;
-                ReadToken *read_token = new ReadToken(callback, asyncio::error(), 0);
             }
 
             void async_write_some(char *buffer, int size, IO_Signature callback) {
-                write_buffer = buffer;
-                write_size = size;
-                WriteToken *write_token = new WriteToken(callback);
             }   
 
+            void read_impl() {
 
-            void implementation(int socket_fd, bool read_flag = true) {
-                if(read_flag) {
-                    int result = read(socket_fd, read_buffer, read_size);
-                    if(result == -1) {
-                        asyncio::error error;
-                        error.set_error_message("ERROR READING ON SOCKET");
+            }
 
-
-                    }
-                }
-                else { //write
-                    int result = write(socket_fd, read_buffer, read_size);
-                    if(result == -1) {
-                        asyncio::error error;
-                        error.set_error_message("ERROR WRITING TO A SOCKET");
-                    }
-                }
+            void write_impl() {
             }
 
         public:
-            int file_descriptor = 0;    
+            int fd = 0;    
 
             epoll_event epoll_read_event;
             epoll_event epoll_write_event;
 
-            std::shared_ptr<WriteToken> write_callback;
-            std::shared_ptr<ReadToken> read_callback;
+            std::shared_ptr<WriteToken> write_token;
+            std::shared_ptr<ReadToken> read_token;
+
+            std::unique_ptr<Callback> read_callback;
+            std::unique_ptr<Callback> write_callback;
 
         private:
             asyncio::executor &executor;
