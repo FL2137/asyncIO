@@ -21,10 +21,10 @@ namespace asyncio {
                 close(fd);
             }
 
-            void async_read_some(char *buffer, int size, IO_Signature callback) {
+            void async_read_some(char *buffer, int size, ReadCallback callback) {
             }
 
-            void async_write_some(char *buffer, int size, IO_Signature callback) {
+            void async_write_some(char *buffer, int size, WriteCallback callback) {
             }   
 
             void read_impl() {
@@ -43,8 +43,8 @@ namespace asyncio {
             std::shared_ptr<WriteToken> write_token;
             std::shared_ptr<ReadToken> read_token;
 
-            std::unique_ptr<Callback> read_callback;
-            std::unique_ptr<Callback> write_callback;
+            std::unique_ptr<Token> read_callback;
+            std::unique_ptr<Token> write_callback;
 
         private:
             asyncio::executor &executor;
