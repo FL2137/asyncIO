@@ -4,7 +4,6 @@
 #include "executor.hpp"
 #include "endpoint.hpp"
 #include "error.hpp"
-#include "event.hpp"
 #include "socket.hpp"
 #include <cstdlib>
 #include <fcntl.h>
@@ -12,7 +11,6 @@
 namespace asyncio {
 namespace tcp {
     class acceptor {
-        typedef std::function<void(asyncio::error, int)> AsyncCallback;
 
     public:
         acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
@@ -56,8 +54,7 @@ namespace tcp {
             close(fd);
         }
 
-        void async_accept(tcp::socket &socket, Accept_Signature callback) {
-            accept_token.functor = callback;
+        void async_accept(tcp::socket &socket, AcceptCallback callback) {
             accept_callback = callback;
             this->tcp_socket = &socket;
 
@@ -67,12 +64,17 @@ namespace tcp {
             
             executor.register_epoll(fd, epoll_accept_event);
             std::cout << "CURRENT CALLBACK ID: " << executor::callback_id << std::endl;
-            impl_callback = new Callback();
-            impl_callback->functor = std::bind(&acceptor::implementation, this);
-            executor.register_callback(impl_callback);
+            impl_callback = new Token();
+            impl_callback->callback = std::bind(&acceptor::implementation, this);
+
+            impl_callback->name = "AcceptImplem";
+
+            executor.register_epoll_handler(impl_callback);
+            
         }
 
         void implementation() {
+            std::cout << "ehrererer\n";
             socklen_t socklen;
             sockaddr_in remote_endpoint;
             int newfd = accept(fd, (sockaddr*)&remote_endpoint, &socklen);
@@ -88,16 +90,18 @@ namespace tcp {
                 // }
                 tcp_socket->fd = newfd;
             }            
-            std::cout << "HERE\n";
-            accept_callback(error);
-            std::cout << "HERE 2\n";
+            AcceptToken* at = new AcceptToken();
+            at->name = "AcceptToken." + std::to_string(newfd);
+            at->callback = accept_callback;
+            at->set_data(error);
+            executor.enqueue_callback(at);
+
         }
 
     private:
-        Callback *impl_callback;
+        Token *impl_callback;
 
-        Accept_Signature accept_callback;
-        AcceptToken accept_token;
+        AcceptCallback accept_callback;
         epoll_event epoll_accept_event;
         asyncio::executor &executor;
         tcp::socket *tcp_socket;
