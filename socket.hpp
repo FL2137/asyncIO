@@ -28,10 +28,29 @@ namespace asyncio {
             }   
 
             void read_impl() {
+                asyncio::error error;
+                int result = read(fd,  read_buffer, read_size);
+                if(result == -1) {
+                    error.set_error_message("Read error");
+                }
 
+                ReadToken *rt = new ReadToken(read_callback);
+                rt->set_data(error, result);
+                rt->name = "ReadToken." + std::to_string(fd);
+                executor.enqueue_callback(rt);
             }
 
             void write_impl() {
+                asyncio::error error;
+                int result = write(fd, write_buffer, write_size);
+                if(result == -1) {
+                    error.set_error_message("Write error");
+                }
+
+                WriteToken *wt = new WriteToken(write_callback);
+                wt->set_data(error, result);
+                wt->name = "WriteToken." + std::to_string(fd);
+                executor.enqueue_callback(wt);
             }
 
         public:
@@ -40,11 +59,8 @@ namespace asyncio {
             epoll_event epoll_read_event;
             epoll_event epoll_write_event;
 
-            std::shared_ptr<WriteToken> write_token;
-            std::shared_ptr<ReadToken> read_token;
-
-            std::unique_ptr<Token> read_callback;
-            std::unique_ptr<Token> write_callback;
+            ReadCallback read_callback;
+            WriteCallback write_callback;
 
         private:
             asyncio::executor &executor;
