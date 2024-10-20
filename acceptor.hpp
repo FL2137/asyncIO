@@ -29,6 +29,9 @@ namespace tcp {
 
                 return;
             }
+            if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == -1) {
+                std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
+            }   
             
             if(bind(fd, (struct sockaddr*)&local_endpoint.server_addr, sizeof(local_endpoint.server_addr)) != 0) {
                 close(fd);
@@ -60,21 +63,21 @@ namespace tcp {
 
             epoll_accept_event.events = EPOLLIN | EPOLLET;
             epoll_accept_event.data.fd = fd;
-            epoll_accept_event.data.u32 = executor::callback_id;
+            int id = executor.reserve_id();
+            epoll_accept_event.data.u32 = id;
             
             executor.register_epoll(fd, epoll_accept_event);
-            std::cout << "CURRENT CALLBACK ID: " << executor::callback_id << std::endl;
+            std::cout << "CURRENT CALLBACK ID: " << id << std::endl;
+
             impl_callback = new Token();
             impl_callback->callback = std::bind(&acceptor::implementation, this);
-
             impl_callback->name = "AcceptImplem";
 
-            executor.register_epoll_handler(impl_callback);
+            executor.register_epoll_handler(impl_callback, id);
             
         }
 
         void implementation() {
-            std::cout << "ehrererer\n";
             socklen_t socklen;
             sockaddr_in remote_endpoint;
             int newfd = accept(fd, (sockaddr*)&remote_endpoint, &socklen);
@@ -84,11 +87,12 @@ namespace tcp {
                 close(newfd);
             }
             else {
+                std::cout << "setting nonblockcity\n";
                 //set the socket descriptor to be nonblocking
-                // if(fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK) == -1) {
-                //     std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
-                // }
-                tcp_socket->fd = newfd;
+                if(fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK) == -1) {
+                    std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
+                }
+                tcp_socket->setup(newfd);
             }            
             AcceptToken* at = new AcceptToken();
             at->name = "AcceptToken." + std::to_string(newfd);
