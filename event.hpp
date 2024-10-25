@@ -18,23 +18,11 @@ enum EVENT_TYPE {
     SOCKET_IO,
 };
 
-class Token {
-public:
-    static int id;
-    public:
-    Token(){}
-    bool completed = false;
-    std::string event_name;
-    char* buffer;
-    int buffer_size;
-
-};
-
 
 class event {
 public: 
 
-    event(std::string event_name, Callback event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
+    event(std::string event_name, Token event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
         this->name = event_name;
         this->callback = event_handler;
         this->type = event_type;
@@ -81,7 +69,7 @@ private:
     asyncio::error child_error;
     int child_nbytes = -1;
 
-    Callback callback;
+    Token callback;
     EVENT_TYPE type;
 
 };
