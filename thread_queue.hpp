@@ -18,6 +18,18 @@ public:
         condvar.notify_one();
     }
 
+    int size() {
+        return queue.size();
+    }
+
+    //blocking function
+    void wait() {
+        std::unique_lock<std::mutex> lock(mutex);
+        condvar.wait(lock, [&] {
+            return queue.size() != 0;
+        });
+    }
+
     T pop() {
         std::unique_lock<std::mutex> lock(mutex);
 
