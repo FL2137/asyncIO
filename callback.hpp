@@ -4,37 +4,42 @@
 #include <functional>
 #include <memory>
 #include <iostream>
+#include "executor.hpp"
 
 namespace asyncio {
-typedef std::function<void(asyncio::error, int)> IO_Signature; 
+typedef std::function<void(const asyncio::error&, int)> ReadCallback; 
+typedef std::function<void(const asyncio::error&, int)> WriteCallback; 
+typedef std::function<void(const asyncio::error&)> AcceptCallback;
 
 //template <typename ...Args>
-class Callback {
+class Token {
 public:
-    Callback() {
+    Token() {
 
     }
-    
     virtual void call() {
-        functor();
+        callback();
     }
 
-    std::function<void(void)> functor = []() {
-    };
+    std::string name = "";
 
+    bool completed = false;
+
+    std::function<void(void)> callback = []() {
+    };
 
 private:
 };
 
-class ReadToken : public Callback {
+class ReadToken : public Token {
 public:
 
-    ReadToken(IO_Signature completion_handler) {
-        this->functor = completion_handler;
+    ReadToken(ReadCallback completion_handler) {
+        this->callback = completion_handler;
     }
 
-    ReadToken(IO_Signature completion_handler, asyncio::error error, int nbytes) {
-        this->functor = completion_handler;
+    ReadToken(ReadCallback completion_handler, asyncio::error error, int nbytes) {
+        this->callback = completion_handler;
         m_error = error;
         m_nbytes = nbytes;
     }
@@ -44,51 +49,68 @@ public:
         m_nbytes = _nbytes;
     }
 
-    void call() override {
-        functor(m_error, m_nbytes);
+    void call() {
+        callback(m_error, m_nbytes);
     }
 
 private:
     asyncio::error m_error;
     int m_nbytes;
-    std::function<void(asyncio::error, int)> functor;
+    std::function<void(asyncio::error, int)> callback;
 };
 
 
-class WriteToken : public Callback {
+class WriteToken : public Token {
 public:
+    typedef std::function<void(char *, int , WriteCallback)> write_impl;
 
-    WriteToken(IO_Signature completion_handler) {
-        functor = completion_handler;
+    WriteToken(WriteCallback completion_handler) {
+        callback = completion_handler;
     }
+
+    WriteToken(char* buffer, int size, WriteCallback completion_handler, void *write_impl) {
+        using writefoo = void(*)(char*, int, WriteCallback);
+        writefoo impl = (writefoo)write_impl;
+        impl(buffer, size, completion_handler);
+    }
+
 
     void set_data(asyncio::error _error, int _nbytes) {
         m_error = _error;
         m_nbytes = _nbytes;
     }
 
+    void call() {
+        callback(m_error, m_nbytes);
+    }
+
 private:
     asyncio::error m_error;
     int m_nbytes;
-    IO_Signature functor;
+    WriteCallback callback;
+    int write_size;
+    char *write_buffer; 
 };
 
-typedef std::function<void(asyncio::error)> Accept_Signature;
 
-class AcceptToken : public Callback {
+class AcceptToken : public Token {
 
 public:
 
     AcceptToken() {}
 
-    AcceptToken(Accept_Signature completion_handler) {
-        this->functor = completion_handler;
+    AcceptToken(AcceptCallback completion_handler) {
+        this->callback = completion_handler;
     }
     void set_data(asyncio::error _error) {
         this->m_error = _error;
     }
 
-    Accept_Signature functor;
+    void call() {
+        callback(m_error);
+    }
+
+    AcceptCallback callback;
 private:
     asyncio::error m_error;
 };
