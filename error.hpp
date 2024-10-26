@@ -24,17 +24,18 @@ namespace asyncio {
             return !message.empty();
         }
 
+        operator bool() const {
+            return !message.empty();
+        }
+
         static void error_callback(asyncio::error error, int nbytes) {
             std::cout << error.what() << std::endl;
         }
-
-        static error placeholder() {
-            return error();
-        }
-        
+        static error placeholder;
 
     private:
         std::string message = "";    
+
     };
 }
 
