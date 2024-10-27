@@ -15,7 +15,7 @@ namespace asyncio {
             typedef std::function<void(asyncio::error, int)> AsyncCallback;
         public:
 
-            socket(asyncio::executor &exec): executor(exec) {
+            socket(const asyncio::executor &exec): executor(exec) {
             }
 
             ~socket() {
@@ -69,9 +69,7 @@ namespace asyncio {
                 epoll_read_event.data.u32 = id;
                 
                 
-                //int count;
-                //ioctl(fd, FIONREAD, &count);
-                //std::cout << "READ TO READ : " << count << std::endl;
+              
                 
                 executor.register_epoll(id, epoll_read_event);
                 Token *t = new Token();
@@ -80,12 +78,7 @@ namespace asyncio {
                     std::cout << "ODCZYTANIE\n";
                 };
                 executor.register_epoll_handler(t, id);
-                std::cout << "Funkcja setup git";
 
-                // char b[1024] = {0};
-                // int r = read(fd, b, 1024);
-                // std::cout << r << "----------------" <<std::endl;
-                // std::cout.write(b, 1024);
             }
 
             void async_write_some(char *buffer, int size, WriteCallback callback) {
