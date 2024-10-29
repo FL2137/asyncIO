@@ -49,17 +49,6 @@ namespace tcp {
             //     std::cout << "ERROR SETTING NONBLOCK ON ACCPET SOCKET\n";
             // }
 
-        }
-
-        ~acceptor() {
-            std::cout << "Acceptor destructor\n";
-            delete impl_callback;
-            close(fd);
-        }
-
-        void async_accept(tcp::socket &socket, AcceptCallback callback) {
-            accept_callback = callback;
-            this->tcp_socket = &socket;
 
             epoll_accept_event.events = EPOLLIN | EPOLLET;
             epoll_accept_event.data.fd = fd;
@@ -74,7 +63,21 @@ namespace tcp {
             impl_callback->name = "AcceptImplem";
 
             executor.register_epoll_handler(impl_callback, id);
-            
+        }
+
+        ~acceptor() {
+            std::cout << "Acceptor destructor\n";
+            delete impl_callback;
+            close(fd);
+        }
+
+        void async_accept(tcp::socket &socket, AcceptCallback callback) {
+            accept_callback = callback;
+            this->tcp_socket = &socket;
+        }
+
+        void enqueue(Token *token) const {
+            executor.enqueue_callback(token);
         }
 
         void implementation() {
