@@ -29,9 +29,10 @@ namespace tcp {
 
                 return;
             }
-            if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == -1) {
-                std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
-            }   
+            
+            // if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == -1) {
+            //     std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
+            // }   
             
             if(bind(fd, (struct sockaddr*)&local_endpoint.server_addr, sizeof(local_endpoint.server_addr)) != 0) {
                 close(fd);
@@ -105,6 +106,9 @@ namespace tcp {
 
         }
 
+
+    public:
+        int fd;
     private:
         Token *impl_callback;
 
@@ -112,7 +116,6 @@ namespace tcp {
         epoll_event epoll_accept_event;
         asyncio::executor &executor;
         tcp::socket *tcp_socket;
-        int fd;
         int n_acceptable_connections = 4;
     };
 }
