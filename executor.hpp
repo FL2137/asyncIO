@@ -106,7 +106,7 @@ public:
 
     void enqueue_callback(Token *callback) { 
         queue.push(callback);
-        std::cout << "ENQUEUED: " << callback->name << std::endl;
+        // std::cout << "ENQUEUED: " << callback->name << std::endl;
     }
 
 private:
@@ -122,7 +122,7 @@ private:
 
         queue.wait();
         int current_size = queue.size();
-        std::cout << "Qeueue size: "<< current_size << std::endl;
+        //std::cout << "Qeueue size: "<< current_size << std::endl;
         for(int i = 0; i < current_size; i++) {
             run_thread(queue.pop());
         }
