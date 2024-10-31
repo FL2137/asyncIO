@@ -13,7 +13,7 @@ namespace tcp {
     class acceptor {
 
     public:
-        acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint) : executor(exec) {
+        acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint, bool register_flag = false) : executor(exec) {
             fd = ::socket(AF_INET, SOCK_STREAM, 0);
 
             if(fd == -1) {
@@ -50,20 +50,21 @@ namespace tcp {
             //     std::cout << "ERROR SETTING NONBLOCK ON ACCPET SOCKET\n";
             // }
 
+            if(register_flag) {
+                epoll_accept_event.events = EPOLLIN | EPOLLET;
+                epoll_accept_event.data.fd = fd;
+                int id = executor.reserve_id();
+                epoll_accept_event.data.u32 = id;
+                
+                executor.register_epoll(fd, epoll_accept_event, "acceptor const");
+                std::cout << "CURRENT CALLBACK ID: " << id << std::endl;
 
-            epoll_accept_event.events = EPOLLIN | EPOLLET;
-            epoll_accept_event.data.fd = fd;
-            int id = executor.reserve_id();
-            epoll_accept_event.data.u32 = id;
-            
-            executor.register_epoll(fd, epoll_accept_event);
-            std::cout << "CURRENT CALLBACK ID: " << id << std::endl;
+                impl_callback = new Token();
+                impl_callback->callback = std::bind(&acceptor::implementation, this);
+                impl_callback->name = "AcceptImplem";
 
-            impl_callback = new Token();
-            impl_callback->callback = std::bind(&acceptor::implementation, this);
-            impl_callback->name = "AcceptImplem";
-
-            executor.register_epoll_handler(impl_callback, id);
+                executor.register_epoll_handler(impl_callback, id);
+            }
         }
 
         ~acceptor() {

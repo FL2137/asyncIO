@@ -82,7 +82,8 @@ public:
         }
     }
   
-    void register_epoll(int fd, epoll_event &event) {
+    void register_epoll(int fd, epoll_event &event, std::string runner) {
+        std::cout << "register_epoll from " + runner + "\n";
         int result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
         if(result == -1 )
             std::cout << "epoll_ctl() error: " << errno << std::endl;

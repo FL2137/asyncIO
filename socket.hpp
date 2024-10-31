@@ -15,7 +15,7 @@ namespace asyncio {
             typedef std::function<void(asyncio::error, int)> AsyncCallback;
         public:
 
-            socket(const asyncio::executor &exec): executor(exec) {
+            socket(asyncio::executor &exec): executor(exec) {
             }
 
             ~socket() {
@@ -40,7 +40,7 @@ namespace asyncio {
                 impl->name = "ReadImpl." + std::to_string(fd);
 
                 executor.register_epoll_handler(impl, id);
-                executor.register_epoll(fd, epoll_read_event);
+                executor.register_epoll(fd, epoll_read_event, "old async_read_some");
 
             }
 
@@ -71,7 +71,7 @@ namespace asyncio {
                 
               
                 
-                executor.register_epoll(id, epoll_read_event);
+                executor.register_epoll(id, epoll_read_event, "socket setup");
                 Token *t = new Token();
                 t->name = "temp read handler";
                 t->callback = []() {
@@ -103,7 +103,7 @@ namespace asyncio {
                 int id = executor.reserve_id();
                 epoll_write_event.data.u32 = id;
 
-                executor.register_epoll(fd, epoll_write_event);
+                executor.register_epoll(fd, epoll_write_event, "socket async_write_some");
 
                 Token *impl = new Token();
                 impl->callback = std::bind(&socket::write_impl, this);
