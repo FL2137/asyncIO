@@ -8,6 +8,7 @@
 #include <thread>
 #include <cstring>
 #include <functional>
+
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -15,11 +16,12 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+
 #include "executor.hpp"
-#include "tester.hpp"
 #include "acceptor.hpp"
 #include "tui.hpp"
 #include "callback.hpp"
+#include "asyncio.hpp"
 
 void srrr() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -65,45 +67,45 @@ void srrr() {
     close(fd);
 }
 
-class program {
+
+class tcp_connection {
+
 public:
+    tcp_connection(asyncio::executor& exec): socket(exec) {
+        buffer = new char[1024];
+    }
+    typedef std::shared_ptr<tcp_connection> pointer;
 
-    program(asyncio::executor &executor, asyncio::tcp::endpoint host_endpoint) : socket(executor), acceptor(executor, host_endpoint) {
-        this->endpoint = host_endpoint;
-        
-        start_accepting();
-    }   
-
-
-    void start_accepting() {
-        acceptor.async_accept(socket, [&](asyncio::error error) {
-            if(error.isError()){
-                std::cout << error.what() << ": " << errno << std::endl;
-                std::cout << "FD: " << nbytes << std::endl;
-                return;
-            }
-            else {
-                do_read();
-            }
-            start_accepting();
-        });
+    static pointer create(asyncio::executor &exec) {
+        return std::make_shared<tcp_connection>(tcp_connection(exec));
     }
 
-    void do_write() {
-        socket.async_write_some(buffer, 1024, [](asyncio::error error, int nbytes) {
-            if(error.isError()) {
-                std::cout << "ERROR IN WRITE CALL BACK\n";
-            }
-            else {
-                std::cout << "ok????";
-            }
-        });
+
+    void run() {
+        do_read();
+        std::cout << "RUN LOL\n";
+    }
+
+    asyncio::tcp::socket& get_socket() {
+        return socket;
     }
 
     void do_read() {
-        socket.async_read_some(buffer, 1024, [&, this](asyncio::error error, int nbytes) {
+        // socket.async_read_some(buffer, 1024, [&, this](asyncio::error error, int nbytes) {
+        //     if(error.isError()){
+        //         std::cout << "ERROR IN READ CALL BACK\n";
+
+        //     }
+        //     std::cout.write(buffer, strlen(buffer)) << std::endl;
+        //     for(int i =0; i < strlen(buffer); i++) {
+        //         buffer[i] = toupper(buffer[i]);
+        //     }
+        //     do_write();
+        // });
+
+        asyncio::async_read_some(socket, buffer, 1024, [&](asyncio::error error, int nbytes) {
             if(error.isError()){
-                std::cout << "ERROR IN READ CALL BACK\n";
+                std::cout << error.what() << std::endl;
 
             }
             std::cout.write(buffer, strlen(buffer)) << std::endl;
@@ -112,15 +114,78 @@ public:
             }
             do_write();
         });
+
+
     }
 
-    char buffer[1024];
+    void do_write() {
+        asyncio::async_write(socket, buffer, 1024, [](asyncio::error error, int nbytes) {
+            if(error.isError()) {
+                std::cout << error.what() << std::endl;
+            }
+            else {
+                std::cout << "written " << nbytes << "bytes" << std::endl;
+            }
+        });
+    }
+
+private:
+
+
+private:
+    char *buffer = nullptr;
     asyncio::tcp::socket socket;
+};
+
+class program {
+public:
+
+    program(asyncio::executor &executor, asyncio::tcp::endpoint host_endpoint): exec(executor), acceptor(executor, host_endpoint) {
+        this->endpoint = host_endpoint;
+        int fd = open("./run.sh", O_RDONLY);
+        std::cout << "PROGRAM FD:  " << fd << "\n";
+        start_accepting();
+    }   
+
+
+
+    void start_accepting() {
+
+        // acceptor.async_accept(socket, [&](asyncio::error error) {
+        //     if(error.isError()){
+        //         std::cout << "AcceptHandler: " << error.what() << std::endl;
+        //         return;
+        //     }
+        //     connections.push_back(std::make_shared<tcp_connection>(socket));
+        // });
+        asyncio::error er;
+        auto con = tcp_connection::create(exec);
+
+        asyncio::async_accept_one(acceptor, con->get_socket(), std::bind(&program::accept_handle, this, con, asyncio::error::placeholder()));
+
+        //acceptor.async_accept(con->get_socket(), std::bind(&program::accept_handle, this, con, asyncio::error::placeholder()));
+    }
+
+    void accept_handle(tcp_connection::pointer newcon, asyncio::error &error) {
+        if(error) {
+            std::cout << error.what() << std::endl;
+            return;
+        } 
+        std::cout << "accept_handle\n";
+        newcon->run();
+        connections.push_back(newcon);
+        start_accepting();
+    }
+
+
+    std::vector<std::shared_ptr<tcp_connection>> connections;
+    char buffer[1024] {0};
     asyncio::tcp::endpoint endpoint;
     asyncio::tcp::acceptor acceptor;
 
-};
+    asyncio::executor& exec;
 
+};
 
 int bindListen() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -162,42 +227,15 @@ int bindListen() {
     return fd;
 }
 
-
-struct xd {
-    int ID = 1;
-    int number;
-
-};
-
-
-
 int main() {
 
+    int pid = getpid();
+    std::cout << "PID: " << pid << std::endl;
+    asyncio::executor executor;
+    asyncio::tcp::endpoint ep(5001);
+    asyncio::tcp::socket socket(executor);
+    program prog(executor, ep);
 
-    exit(-1);
-    int efd = epoll_create(5);
-    epoll_event eevents[5];
-    epoll_event eevent;
-    int serverfd = bindListen();
-    eevent.data.fd = serverfd;
-    eevent.events = EPOLLIN | EPOLLET;
-
-    epoll_ctl(efd, EPOLL_CTL_ADD, serverfd, &eevent);
-    
-    while(1) {
-        int nfds = epoll_wait(efd, eevents, 5, -1);
-
-        for(int i = 0; i < nfds; i++) {
-        }
-    }
-
-
-    // int pid = getpid();
-    // std::cout << "PID: " << pid << std::endl;
-    // asyncio::executor executor;
-    // asyncio::tcp::endpoint ep(5001);
-    // asyncio::tcp::socket socket(executor);
-    // program prog(executor, ep);
-    // executor.run();
+    executor.run();
     return 0;
 }
