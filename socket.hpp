@@ -62,6 +62,7 @@ namespace asyncio {
 
             void setup(int fd) {
                 this->fd = fd;
+                std::cout << "SOCKET SETUP FD: " << fd << "\n";
                 epoll_read_event.events = EPOLLIN | EPOLLET;
                 epoll_read_event.data.fd = fd;
                 epoll_read_event.data.ptr = read_buffer;
@@ -69,15 +70,13 @@ namespace asyncio {
                 epoll_read_event.data.u32 = id;
                 
                 
-              
-                
-                executor.register_epoll(id, epoll_read_event, "socket setup");
-                Token *t = new Token();
-                t->name = "temp read handler";
-                t->callback = []() {
-                    std::cout << "ODCZYTANIE\n";
-                };
-                executor.register_epoll_handler(t, id);
+                // executor.register_epoll(id, epoll_read_event, "socket setup");
+                // Token *t = new Token();
+                // t->name = "temp read handler";
+                // t->callback = []() {
+                //     std::cout << "ODCZYTANIE\n";
+                // };
+                // executor.register_epoll_handler(t, id);
 
             }
 
@@ -147,7 +146,7 @@ namespace asyncio {
             
 
         public:
-            int fd = 0;    
+            int fd = -1;    
 
             epoll_event epoll_read_event;
             epoll_event epoll_write_event;
