@@ -50,16 +50,27 @@ namespace asyncio {
         impl_token->callback = [&, callback] {
             asyncio::error error;
             
-            socklen_t socklen;
             sockaddr_in remote_endpoint;
-            
+            socklen_t socklen = sizeof(remote_endpoint);
+            std::cout << "Trying to accept on " << acceptor.fd << "\n"; 
             int result_fd = accept(acceptor.fd, (sockaddr*)&remote_endpoint, &socklen);
+
 
             if(result_fd == -1) {
                 error.set_error_message("accept error: " + std::to_string(errno));
             }
+            else {
+                std::cout << "ACCEPTED ON FD: " << result_fd; 
+
+                char buff[100];
+                inet_ntop(AF_INET, &remote_endpoint.sin_addr, buff, 100);
+                std::cout << " Address: " << buff << "\n";
+            }
             if(fcntl(result_fd, F_SETFL, fcntl(result_fd, F_GETFL) | O_NONBLOCK) == -1) {
                 std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
+            }
+            else {
+                std::cout << "SET NONBLOCK ON ACCEPTED FD\n";
             }
             socket.setup(result_fd);
 
@@ -78,9 +89,12 @@ namespace asyncio {
         Token *impl_token = new Token();
         int sfd = reader.fd;
         impl_token->name = "read_impl_token";
+        std::cout << "SFD: " << sfd << std::endl;
+
         impl_token->callback = [&, sfd, buffer, size, callback] {
             asyncio::error error;
             int result = read(sfd, buffer, size);
+            std::cout << "SFD CALL: " << sfd << std::endl;
             if(result == -1) {
                 error.set_error_message("Read error: " + std::to_string(errno));
             }
