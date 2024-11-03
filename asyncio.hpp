@@ -108,6 +108,40 @@ namespace asyncio {
         reader.enqueue(impl_token);
     }
 
+    template<typename Reader>
+    void async_read(const Reader &reader, char *buffer, int size, ReadCallback callback) {
+        static int id = -1;
+        
+        Token *impl = new Token();
+
+        impl->name = "read_impl_token";
+
+        impl->callback = [&, buffer, size, callback] {
+            asyncio::error error;
+            int result = read(reader.fd, buffer, size);
+
+            if(result == -1){
+                error.set_error_message("Read error: " + std::to_string(errno));
+            }
+
+            ReadToken *token = new ReadToken(callback);
+            token->name = "ReadToken." + std::to_string(reader.fd);
+            token->set_data(error, result);
+            reader.enqueue(token);
+
+        }
+
+        epoll_read_event.events = EPOLLONESHOT | EPOLLIN | EPOLLET;
+        epoll_read_event.data.fd = fd;
+        epoll_read_event.data.ptr = write_buffer;
+        
+        if(id == -1) {
+            
+        }
+
+    }
+
+
     template<typename Writer> 
     void async_write_some(const Writer& writer, char *buffer, int size, WriteCallback callback) {
         Token *impl_token = new Token();
