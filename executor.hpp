@@ -78,6 +78,9 @@ public:
             int nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, -1);
             for(int i = 0; i < nfds; i++) {
                 this->enqueue_callback(token_map[epoll_events[i].data.u32]);
+                if(epoll_events[i].data.u32 < 0) {
+                    token_map.erase(epoll_events[i].data.u32);
+                }
             }
         }
     }
