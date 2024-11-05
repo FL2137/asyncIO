@@ -54,10 +54,15 @@ namespace asyncio {
                 impl->callback = std::bind(&socket::read_impl, this);
                 impl->name = "ReadImpl." + std::to_string(fd);
 
-                executor.register_epoll_handler(impl, epoll_read_event.data.u32);
                 
-                //this needs ID
-                //executor.register_epoll(id,epoll_read_event);
+                epoll_read_event.events = EPOLLIN | EPOLLET;
+                epoll_read_event.data.fd = fd;
+                epoll_read_event.data.u32 = fd;
+
+                executor.register_epoll(fd, epoll_read_event, "async_read");
+
+
+                executor.register_epoll_handler(impl, fd);
             }
 
             void setup(int fd) {

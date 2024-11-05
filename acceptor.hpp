@@ -43,7 +43,7 @@ namespace tcp {
                 close(fd);
                 return;
             }
-            std::cout << "Acceptor constructed\n";
+            std::cout << "Acceptor constructed on " << fd << "\n";
            
             // int r = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
             // if(r == -1) {
@@ -53,7 +53,7 @@ namespace tcp {
             if(register_flag) {
                 epoll_accept_event.events = EPOLLIN | EPOLLET;
                 epoll_accept_event.data.fd = fd;
-                int id = executor.reserve_id();
+                int id = fd;
                 epoll_accept_event.data.u32 = id;
                 
                 executor.register_epoll(fd, epoll_accept_event, "acceptor const");
