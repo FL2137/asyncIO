@@ -31,7 +31,7 @@ namespace asyncio {
                 epoll_read_event.events = EPOLLIN | EPOLLET;
                 epoll_read_event.data.fd = fd;
                 epoll_read_event.data.ptr = read_buffer;
-                int id = executor.reserve_id();
+                int id = fd;
                 epoll_read_event.data.u32 = id;
 
                 Token *impl = new Token();
@@ -66,7 +66,7 @@ namespace asyncio {
                 epoll_read_event.events = EPOLLIN | EPOLLET;
                 epoll_read_event.data.fd = fd;
                 epoll_read_event.data.ptr = read_buffer;
-                int id = executor.reserve_id();
+                int id = fd;
                 epoll_read_event.data.u32 = id;
                 
                 
@@ -99,7 +99,7 @@ namespace asyncio {
                 epoll_write_event.events = EPOLLONESHOT | EPOLLOUT | EPOLLET;
                 epoll_write_event.data.fd = fd;
                 epoll_write_event.data.ptr = write_buffer;
-                int id = executor.reserve_id();
+                int id = -fd;
                 epoll_write_event.data.u32 = id;
 
                 executor.register_epoll(fd, epoll_write_event, "socket async_write_some");
