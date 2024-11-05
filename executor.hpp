@@ -31,8 +31,6 @@ class executor {
 
 public:
 
-    inline static int callback_id = 0;
-
     executor() {
 
         signal(SIGINT, [](int){
@@ -96,10 +94,6 @@ public:
 
     void register_epoll_handler(Token *callback, int id) {
         token_map[id] = callback;
-    }
-
-    int reserve_id() {
-        return executor::callback_id++;
     }
 
     void run_thread(Token *callback) {
