@@ -58,8 +58,8 @@ public:
 
     }
 
-    void epoll_rearm(int fd, epoll_event *event) {
-        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, event);
+    void epoll_rearm(int fd, epoll_event &event) {
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
     }
 
     void run_epoll() {
@@ -83,13 +83,17 @@ public:
         }
     }
   
-    void register_epoll(int fd, epoll_event &event, std::string runner) {
+    bool register_epoll(int fd, epoll_event &event, std::string runner) {
         std::cout << "register_epoll from " + runner + "\n";
         int result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
-        if(result == -1 )
+        if(result == -1) {
             std::cout << "epoll_ctl() error: " << errno << std::endl;
-        else
+            return false;
+        }
+        else {
             std::cout << "REGISTERED: " << event.data.fd << std::endl;
+            return true;
+        }
     }
 
     void register_epoll_handler(Token *callback, int id) {
