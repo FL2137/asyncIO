@@ -28,7 +28,15 @@ namespace asyncio {
                 this->read_buffer = buffer;
                 this->read_size = size;
 
-                epoll_read_event.events = EPOLLIN | EPOLLET;
+                if(executor.register_epoll(fd, epoll_read_event, "") == false ) {
+                    if(errno == EEXIST) {
+                        executor.epoll_rearm(fd, epoll_read_event);
+                        return;
+                    }
+                }
+
+
+                epoll_read_event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
                 epoll_read_event.data.fd = fd;
                 epoll_read_event.data.ptr = read_buffer;
                 int id = fd;
@@ -40,7 +48,7 @@ namespace asyncio {
                 impl->name = "ReadImpl." + std::to_string(fd);
 
                 executor.register_epoll_handler(impl, id);
-                executor.register_epoll(fd, epoll_read_event, "old async_read_some");
+                executor.register_epoll(fd, epoll_read_event, "oneshot async_read_some");
 
             }
 
@@ -93,7 +101,7 @@ namespace asyncio {
                     epoll_write_event.data.fd = fd;
                     epoll_write_event.data.ptr = write_buffer;
 
-                    executor.epoll_rearm(fd, &epoll_write_event);
+                    executor.epoll_rearm(fd, epoll_write_event);
                     return;
                 }
 
