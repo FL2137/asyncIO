@@ -93,7 +93,9 @@ namespace asyncio {
 
         impl_token->callback = [&, sfd, buffer, size, callback] {
             asyncio::error error;
-            int result = read(sfd, buffer, size);
+            char *b = new char[1024];
+            std::cout << size << "\n";
+            int result = read(sfd, buffer, 1024);
             std::cout << "SFD CALL: " << sfd << std::endl;
             if(result == -1) {
                 error.set_error_message("Read error: " + std::to_string(errno));
@@ -129,16 +131,12 @@ namespace asyncio {
             token->set_data(error, result);
             reader.enqueue(token);
 
-        }
+        };
 
-        epoll_read_event.events = EPOLLONESHOT | EPOLLIN | EPOLLET;
-        epoll_read_event.data.fd = fd;
-        epoll_read_event.data.ptr = write_buffer;
-        
-        if(id == -1) {
-            
-        }
-
+        reader.epoll_read_event.events = EPOLLONESHOT | EPOLLIN | EPOLLET;
+        reader.epoll_read_event.data.fd = reader.fd;
+        reader.epoll_read_event.data.ptr = buffer;
+        reader.epoll_read_event.data.u32 = reader.fd * -1;
     }
 
 
