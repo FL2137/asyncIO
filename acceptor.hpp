@@ -104,7 +104,6 @@ namespace tcp {
             at->callback = accept_callback;
             at->set_data(error);
             executor.enqueue_callback(at);
-
         }
 
 
@@ -112,7 +111,7 @@ namespace tcp {
         int fd;
     private:
         Token *impl_callback;
-
+        asyncio::tcp::endpoint local_endpoint;
         AcceptCallback accept_callback;
         epoll_event epoll_accept_event;
         asyncio::executor &executor;
