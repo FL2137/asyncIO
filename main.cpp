@@ -91,21 +91,9 @@ public:
     }
 
     void do_read() {
-        // socket.async_read_some(buffer, 1024, [&, this](asyncio::error error, int nbytes) {
-        //     if(error.isError()){
-        //         std::cout << "ERROR IN READ CALL BACK\n";
-
-        //     }
-        //     std::cout.write(buffer, strlen(buffer)) << std::endl;
-        //     for(int i =0; i < strlen(buffer); i++) {
-        //         buffer[i] = toupper(buffer[i]);
-        //     }
-        //     do_write();
-        // });
-
-        asyncio::async_read_some(socket, buffer, 1024, [&](asyncio::error error, int nbytes) {
+        socket.async_read(buffer, 1024, [&, this](asyncio::error error, int nbytes) {
             if(error.isError()){
-                std::cout << error.what() << std::endl;
+                std::cout << "ERROR IN READ CALL BACK\n";
 
             }
             std::cout.write(buffer, strlen(buffer)) << std::endl;
@@ -114,12 +102,21 @@ public:
             }
             do_write();
         });
+        // asyncio::async_read_some(socket, buffer, 1024, [&](asyncio::error error, int nbytes) {
+        //     if(error.isError()){
+        //         std::cout << error.what() << std::endl;
 
-
+        //     }
+        //     std::cout.write(buffer, strlen(buffer)) << std::endl;
+        //     for(int i =0; i < strlen(buffer); i++) {
+        //         buffer[i] = toupper(buffer[i]);
+        //     }
+        //     do_write();
+        // });
     }
 
     void do_write() {
-        asyncio::async_write(socket, buffer, 1024, [](asyncio::error error, int nbytes) {
+        asyncio::async_write(socket, buffer, 1024, [&](asyncio::error error, int nbytes) {
             if(error.isError()) {
                 std::cout << error.what() << std::endl;
             }
@@ -140,10 +137,8 @@ private:
 class program {
 public:
 
-    program(asyncio::executor &executor, asyncio::tcp::endpoint host_endpoint): exec(executor), acceptor(executor, host_endpoint) {
+    program(asyncio::executor &executor, asyncio::tcp::endpoint &host_endpoint): exec(executor), acceptor(executor, host_endpoint) {
         this->endpoint = host_endpoint;
-        int fd = open("./run.sh", O_RDONLY);
-        std::cout << "PROGRAM FD:  " << fd << "\n";
         start_accepting();
     }   
 
