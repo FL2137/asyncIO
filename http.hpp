@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string>
+#include "json.hpp"
 
 
 namespace asyncio {
 namespace HTTP {
-
 
 enum METHOD {
     GET = 0,
@@ -15,6 +15,13 @@ enum METHOD {
 };
 
 class request {
+
+
+
+
+private:
+
+    nlohmann::json json;
 
 };
 
@@ -28,11 +35,7 @@ class parser {
 
     }
 
-    void f() {
-
-    }
 };
-
 
 } 
 }
