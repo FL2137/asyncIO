@@ -147,7 +147,13 @@ namespace asyncio {
         impl_token->name = "write_impl_token";
         impl_token->callback = [&, sfd, buffer, size, callback] {
             asyncio::error error;
-            int result = write(sfd, buffer, size);
+            int result;
+            try {
+                result = write(sfd, buffer, size);
+            }
+            catch(std::exception &e) {
+                std::cerr << e.what() << "\n"; 
+            }
             if(result == -1) {
                 error.set_error_message("Wrtite error: " + std::to_string(errno));
             }
