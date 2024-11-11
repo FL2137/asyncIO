@@ -222,8 +222,45 @@ int bindListen() {
     return fd;
 }
 
-int main() {
 
+#include "http.hpp"
+#include <fstream>
+
+
+int main() {
+using namespace asyncio;
+using namespace std::string_literals;
+    std::ifstream http_request_sample("./samplehttp.txt", std::ios::binary);
+
+    
+
+
+    std::string whole = ""s;
+    std::string line = ""s;
+    while(std::getline(http_request_sample, line)) {
+        whole += line;
+    }
+
+    std::cout << whole << std::endl;
+    http::request request();
+
+    for(int i = 0 ;i < whole.size() -1; i++) {
+        if(whole[i] == '\r' && whole[i+1] == '\n') {
+            std::cout << "xd\n";
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    return 3;
     int pid = getpid();
     std::cout << "PID: " << pid << std::endl;
     asyncio::executor executor;

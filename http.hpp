@@ -5,7 +5,7 @@
 
 
 namespace asyncio {
-namespace HTTP {
+namespace http {
 
 enum METHOD {
     GET = 0,
@@ -16,11 +16,15 @@ enum METHOD {
 
 class request {
 
+public:
+
+    request(const std::string &request_string){
+        std::string line;
+    }
 
 
 
 private:
-
     nlohmann::json json;
 
 };
