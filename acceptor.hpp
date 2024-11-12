@@ -18,21 +18,13 @@ namespace tcp {
 
             if(fd == -1) {
                 close(fd);
-                std::cout << "ACCEPTOR LISTEN 1\n";
                 return;
             }
             int options = 1;
             if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &options, sizeof(options))) {
                 close(fd);
-                std::cout << "ACCEPTOR LISTEN 2\n";
-                std::cout << errno << std::endl;
-
                 return;
             }
-            
-            // if(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == -1) {
-            //     std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
-            // }   
             
             if(bind(fd, (struct sockaddr*)&local_endpoint.server_addr, sizeof(local_endpoint.server_addr)) != 0) {
                 close(fd);
@@ -43,13 +35,7 @@ namespace tcp {
                 close(fd);
                 return;
             }
-            std::cout << "Acceptor constructed on " << fd << "\n";
            
-            // int r = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
-            // if(r == -1) {
-            //     std::cout << "ERROR SETTING NONBLOCK ON ACCPET SOCKET\n";
-            // }
-
             if(register_flag) {
                 epoll_accept_event.events = EPOLLIN | EPOLLET;
                 epoll_accept_event.data.fd = fd;
@@ -57,7 +43,6 @@ namespace tcp {
                 epoll_accept_event.data.u32 = id;
                 
                 executor.register_epoll(fd, epoll_accept_event, "acceptor const");
-                std::cout << "CURRENT CALLBACK ID: " << id << std::endl;
 
                 impl_callback = new Token();
                 impl_callback->callback = std::bind(&acceptor::implementation, this);
@@ -68,7 +53,6 @@ namespace tcp {
         }
 
         ~acceptor() {
-            std::cout << "Acceptor destructor\n";
             delete impl_callback;
             close(fd);
         }
@@ -92,7 +76,6 @@ namespace tcp {
                 close(newfd);
             }
             else {
-                std::cout << "setting nonblockcity\n";
                 //set the socket descriptor to be nonblocking
                 if(fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK) == -1) {
                     std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
