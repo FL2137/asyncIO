@@ -10,18 +10,8 @@ namespace asyncio {
 
     void async_write(const asyncio::tcp::socket &socket, char *buffer, int size, WriteCallback callback) {
 
-
-        // int r = write(socket.fd, buffer, size);
-        // if(r == -1) {
-        //     std::cout << "error writing\n";
-        //     return;
-        // }
-
-        // std::cout << "lol ok\n";
-
         Token *impl_token = new Token();
         int sfd = socket.fd;
-
 
         impl_token->name = "write_impl_token";
 
@@ -60,17 +50,12 @@ namespace asyncio {
                 error.set_error_message("accept error: " + std::to_string(errno));
             }
             else {
-                std::cout << "ACCEPTED ON FD: " << result_fd; 
 
                 char buff[100];
                 inet_ntop(AF_INET, &remote_endpoint.sin_addr, buff, 100);
-                std::cout << " Address: " << buff << "\n";
             }
             if(fcntl(result_fd, F_SETFL, fcntl(result_fd, F_GETFL) | O_NONBLOCK) == -1) {
-                std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
-            }
-            else {
-                std::cout << "SET NONBLOCK ON ACCEPTED FD\n";
+                //error
             }
             socket.setup(result_fd);
 
@@ -89,14 +74,11 @@ namespace asyncio {
         Token *impl_token = new Token();
         int sfd = reader.fd;
         impl_token->name = "read_impl_token";
-        std::cout << "SFD: " << sfd << std::endl;
 
         impl_token->callback = [&, sfd, buffer, size, callback] {
             asyncio::error error;
             char *b = new char[1024];
-            std::cout << size << "\n";
             int result = read(sfd, buffer, 1024);
-            std::cout << "SFD CALL: " << sfd << std::endl;
             if(result == -1) {
                 error.set_error_message("Read error: " + std::to_string(errno));
             }
