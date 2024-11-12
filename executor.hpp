@@ -39,7 +39,6 @@ public:
         });
      
         run_epoll();
-        //epoll_fd = epoll_create(EPOLL_COUNT);
     }
 
     ~executor() {
@@ -54,10 +53,6 @@ public:
         event_loop();
     }
 
-    void catch_signal(int dummy) {
-
-    }
-
     void epoll_rearm(int fd, epoll_event &event) {
         epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &event);
     }
@@ -69,7 +64,6 @@ public:
 
         epoll_thread.detach();
     }
-
 
     void epoll_work() {
         while(executor::epoll_running) {
@@ -84,14 +78,14 @@ public:
     }
   
     bool register_epoll(int fd, epoll_event &event, std::string runner) {
-        std::cout << "register_epoll from " + runner + "\n";
+        //std::cout << "register_epoll from " + runner + "\n";
         int result = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &event);
         if(result == -1) {
-            std::cout << "epoll_ctl() error: " << errno << std::endl;
+          //  std::cout << "epoll_ctl() error: " << errno << std::endl;
             return false;
         }
         else {
-            std::cout << "REGISTERED: " << event.data.fd << std::endl;
+            //std::cout << "REGISTERED: " << event.data.fd << std::endl;
             return true;
         }
     }
@@ -101,7 +95,6 @@ public:
     }
 
     void run_thread(Token *callback) {
-        std::cout << "Running in a thread: " << callback->name << std::endl;
         std::thread worker_thread(&Token::call, callback);
         worker_thread.detach();
     }
