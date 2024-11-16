@@ -104,11 +104,15 @@ public:
         // std::cout << "ENQUEUED: " << callback->name << std::endl;
     }
 
+    void enqueue_callback(Token &&callback) {
+
+    }
+
 private:
     inline static bool epoll_running = false;
     int epoll_fd = 0;
     epoll_event epoll_events[EPOLL_COUNT];
-    std::map<signed int, Token*> token_map;
+    std::map<signed int, std::unique_ptr<Token>> token_map;
 
     thread_queue<Token*> queue = {};
 
@@ -122,7 +126,6 @@ private:
             run_thread(queue.pop());
         }
     }
-
 };
 }
 #endif
