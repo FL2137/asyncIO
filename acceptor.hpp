@@ -62,8 +62,8 @@ namespace tcp {
             this->tcp_socket = &socket;
         }
 
-        void enqueue(Token *token) const {
-            executor.enqueue_callback(token);
+        void enqueue(Token&& token) const {
+            executor.enqueue_callback(std::move(token));
         }
 
         void implementation() {
@@ -82,11 +82,11 @@ namespace tcp {
                 }
                 tcp_socket->setup(newfd);
             }            
-            AcceptToken* at = new AcceptToken();
-            at->name = "AcceptToken." + std::to_string(newfd);
-            at->callback = accept_callback;
-            at->set_data(error);
-            executor.enqueue_callback(at);
+            AcceptToken at;
+            at.name = "AcceptToken." + std::to_string(newfd);
+            at.callback = accept_callback;
+            at.set_data(error);
+            executor.enqueue_callback(std::move(at));
         }
 
 
