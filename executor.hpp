@@ -127,7 +127,7 @@ private:
         int current_size = queue.size();
         //std::cout << "Qeueue size: "<< current_size << std::endl;
         for(int i = 0; i < current_size; i++) {
-            run_thread(queue.pop());
+            run_thread(std::move(queue.pop()));
         }
     }
 
