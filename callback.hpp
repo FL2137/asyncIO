@@ -12,6 +12,7 @@ typedef std::function<void(const asyncio::error&, int)> WriteCallback;
 typedef std::function<void(const asyncio::error&)> AcceptCallback;
 
 //template <typename ...Args>
+
 class Token {
 public:
     Token() {
