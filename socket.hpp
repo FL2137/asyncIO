@@ -42,12 +42,12 @@ namespace asyncio {
                 int id = fd;
                 epoll_read_event.data.u32 = id;
 
-                Token *impl = new Token();
+                auto impl = std::unique_ptr<Token>(new Token());
 
                 impl->callback = std::bind(&socket::read_impl, this);
                 impl->name = "ReadImpl." + std::to_string(fd);
 
-                executor.register_epoll_handler(impl, id);
+                executor.register_epoll_handler(std::move(impl), id);
                 executor.register_epoll(fd, epoll_read_event, "oneshot async_read_some");
 
             }
@@ -57,7 +57,7 @@ namespace asyncio {
                 this->read_size = size;
                 this->read_callback = callback;
                 
-                Token *impl = new Token();
+                auto impl = std::unique_ptr<Token>(new Token());
 
                 impl->callback = std::bind(&socket::read_impl, this);
                 impl->name = "ReadImpl." + std::to_string(fd);
@@ -70,7 +70,7 @@ namespace asyncio {
                 executor.register_epoll(fd, epoll_read_event, "async_read");
 
 
-                executor.register_epoll_handler(impl, fd);
+                executor.register_epoll_handler(std::move(impl), fd);
             }
 
             void setup(int fd) {
@@ -117,11 +117,11 @@ namespace asyncio {
 
                 executor.register_epoll(fd, epoll_write_event, "socket async_write_some");
 
-                Token *impl = new Token();
+                auto impl = std::unique_ptr<Token>(new Token());
                 impl->callback = std::bind(&socket::write_impl, this);
                 impl->name = "WriteImpl." + std::to_string(fd);
                 
-                executor.register_epoll_handler(impl, id);
+                executor.register_epoll_handler(std::move(impl), id);
             }   
 
             void enqueue(Token *callback) const {
@@ -149,7 +149,7 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Write error");
                 }
-
+                auto wt = std::make_unique<WriteToken>(new WriteToken(write_callback));
                 WriteToken *wt = new WriteToken(write_callback);
                 wt->set_data(error, result);
                 wt->name = "WriteToken." + std::to_string(fd);
