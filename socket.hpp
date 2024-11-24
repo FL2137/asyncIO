@@ -124,8 +124,8 @@ namespace asyncio {
                 executor.register_epoll_handler(std::move(impl), id);
             }   
 
-            void enqueue(Token *callback) const {
-                executor.enqueue_callback(callback);
+            void enqueue(Token&& callback) const {
+                executor.enqueue_callback(std::move(callback));
             }
 
         private:
@@ -136,11 +136,10 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Read error");
                 }
-
-                ReadToken *rt = new ReadToken(read_callback);
+                auto rt = std::make_unique<ReadToken>(new ReadToken(read_callback));
                 rt->set_data(error, result);
                 rt->name = "ReadToken." + std::to_string(fd);
-                executor.enqueue_callback(rt);
+                executor.enqueue_callback(std::move(rt));
             }
 
             void write_impl() {
@@ -150,10 +149,9 @@ namespace asyncio {
                     error.set_error_message("Write error");
                 }
                 auto wt = std::make_unique<WriteToken>(new WriteToken(write_callback));
-                WriteToken *wt = new WriteToken(write_callback);
                 wt->set_data(error, result);
                 wt->name = "WriteToken." + std::to_string(fd);
-                executor.enqueue_callback(wt);
+                executor.enqueue_callback(std::move(wt));
             }
 
             
