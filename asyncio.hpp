@@ -10,12 +10,12 @@ namespace asyncio {
 
     void async_write(const asyncio::tcp::socket &socket, char *buffer, int size, WriteCallback callback) {
 
-        Token *impl_token = new Token();
+        Token impl_token;
         int sfd = socket.fd;
 
-        impl_token->name = "write_impl_token";
+        impl_token.name = "write_impl_token";
 
-        impl_token->callback = [&, sfd, buffer, size, callback]() {
+        impl_token.callback = [&, sfd, buffer, size, callback]() {
 
             asyncio::error error;
 
@@ -24,13 +24,13 @@ namespace asyncio {
                 error.set_error_message("Write error: " + std::to_string(errno));
             }
 
-            WriteToken *write_token = new WriteToken(callback);
-            write_token->name = "write_token";
-            write_token->set_data(error, result);
-            socket.enqueue(write_token);
+            WriteToken write_token(callback);
+            write_token.name = "write_token";
+            write_token.set_data(error, result);
+            socket.enqueue(std::move(write_token));
         };
 
-        socket.enqueue(impl_token);
+        socket.enqueue(std::move(impl_token));
     }
 
     template<typename Acceptor, typename Socket> 
