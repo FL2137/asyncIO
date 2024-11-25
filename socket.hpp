@@ -42,10 +42,10 @@ namespace asyncio {
                 int id = fd;
                 epoll_read_event.data.u32 = id;
 
-                auto impl = std::unique_ptr<Token>(new Token());
+                Token impl;
 
-                impl->callback = std::bind(&socket::read_impl, this);
-                impl->name = "ReadImpl." + std::to_string(fd);
+                impl.callback = std::bind(&socket::read_impl, this);
+                impl.name = "ReadImpl." + std::to_string(fd);
 
                 executor.register_epoll_handler(std::move(impl), id);
                 executor.register_epoll(fd, epoll_read_event, "oneshot async_read_some");
@@ -57,10 +57,10 @@ namespace asyncio {
                 this->read_size = size;
                 this->read_callback = callback;
                 
-                auto impl = std::unique_ptr<Token>(new Token());
+                Token impl;
 
-                impl->callback = std::bind(&socket::read_impl, this);
-                impl->name = "ReadImpl." + std::to_string(fd);
+                impl.callback = std::bind(&socket::read_impl, this);
+                impl.name = "ReadImpl." + std::to_string(fd);
 
                 
                 epoll_read_event.events = EPOLLIN | EPOLLET;
@@ -117,9 +117,9 @@ namespace asyncio {
 
                 executor.register_epoll(fd, epoll_write_event, "socket async_write_some");
 
-                auto impl = std::unique_ptr<Token>(new Token());
-                impl->callback = std::bind(&socket::write_impl, this);
-                impl->name = "WriteImpl." + std::to_string(fd);
+                Token impl;
+                impl.callback = std::bind(&socket::write_impl, this);
+                impl.name = "WriteImpl." + std::to_string(fd);
                 
                 executor.register_epoll_handler(std::move(impl), id);
             }   
@@ -136,9 +136,9 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Read error");
                 }
-                auto rt = std::make_unique<ReadToken>(new ReadToken(read_callback));
-                rt->set_data(error, result);
-                rt->name = "ReadToken." + std::to_string(fd);
+                ReadToken rt(read_callback);
+                rt.set_data(error, result);
+                rt.name = "ReadToken." + std::to_string(fd);
                 executor.enqueue_callback(std::move(rt));
             }
 
@@ -148,9 +148,9 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Write error");
                 }
-                auto wt = std::make_unique<WriteToken>(new WriteToken(write_callback));
-                wt->set_data(error, result);
-                wt->name = "WriteToken." + std::to_string(fd);
+                WriteToken wt(write_callback);
+                wt.set_data(error, result);
+                wt.name = "WriteToken." + std::to_string(fd);
                 executor.enqueue_callback(std::move(wt));
             }
 
