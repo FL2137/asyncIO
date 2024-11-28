@@ -24,7 +24,6 @@ namespace asyncio {
 
             }
 
-
             endpoint(short port) {
                 this->address = "127.0.0.1";
                 this->port = port;

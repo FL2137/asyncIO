@@ -31,7 +31,9 @@ namespace asyncio {
         static void error_callback(asyncio::error error, int nbytes) {
             std::cout << error.what() << std::endl;
         }
-        static error placeholder;
+        static error placeholder() {
+            return error();
+        }
 
     private:
         std::string message = "";    

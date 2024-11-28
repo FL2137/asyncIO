@@ -35,6 +35,7 @@ namespace asyncio {
 
     template<typename Acceptor, typename Socket> 
     void async_accept_one(const Acceptor &acceptor, Socket &socket, AcceptCallback callback) {
+        std::cout << "asyncio::async_accept_one() \n";
         Token impl_token;
         impl_token.name = "accept_one_impl_token";
         impl_token.callback = [&, callback] {

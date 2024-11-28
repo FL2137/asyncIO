@@ -67,7 +67,10 @@ public:
             int nfds = epoll_wait(epoll_fd, epoll_events, EPOLL_COUNT, -1);
             for(int i = 0; i < nfds; i++) {
 
-                this->enqueue_callback(std::move(Token(token_map[epoll_events[i].data.u32])));
+                //make this into shared_ptr
+                std::shared_ptr<Token> ptr = token_map[epoll_events[i].data.u32];
+
+                this->enqueue_callback(ptr);
 
                 if(epoll_events[i].data.u32 < 0) {
                     token_map.erase(epoll_events[i].data.u32);
@@ -89,27 +92,29 @@ public:
         }
     }
 
-    void register_epoll_handler(Token&& callback, int id) {
+    void register_epoll_handler(std::unique_ptr<Token> callback, int id) {
         token_map[id] = std::move(callback);
     }
 
     void run_thread(Token &&callback) {
         std::thread worker_thread(&Token::call, std::move(callback));
+        std::cout << "run_thread() for " << callback.name << std::endl;
         worker_thread.detach();
     }
 
-    void enqueue_callback(Token &&callback) {
+    void enqueue_callback(std::unique_ptr<Token> callback) {
+        std::cout << "queue size: " << queue.size() << std::endl;
         queue.push(std::move(callback));
+        std::cout << "queue size: " << queue.size() << std::endl;
     }
 
 private:
     inline static bool epoll_running = false;
     int epoll_fd = 0;
     epoll_event epoll_events[EPOLL_COUNT];
-    std::map<signed int, Token> token_map;
+    std::map<signed int, std::shared_ptr<Token>> token_map;
 
-    thread_queue<Token> queue = {};
-
+    thread_queue<std::unique_ptr<Token>> queue = {};
 
     void process_events() {
 
@@ -117,10 +122,9 @@ private:
         int current_size = queue.size();
         //std::cout << "Qeueue size: "<< current_size << std::endl;
         for(int i = 0; i < current_size; i++) {
-            run_thread(std::move(queue.rpop()));
+            run_thread(queue.pop());
         }
     }
-
 };
 }
 #endif
