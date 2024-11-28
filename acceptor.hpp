@@ -44,9 +44,9 @@ namespace tcp {
                 
                 executor.register_epoll(fd, epoll_accept_event, "acceptor const");
  
-                std::unique_ptr<Token> impl_token = std::make_unique<Token>();
-                impl_token->callback = std::bind(&acceptor::implementation, this);
-                impl_token->name = "AcceptImplem";
+                Token impl_token;
+                impl_token.callback = std::bind(&acceptor::implementation, this);
+                impl_token.name = "AcceptImplem";
 
                 executor.register_epoll_handler(std::move(impl_token), id);
             }
