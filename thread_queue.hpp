@@ -30,6 +30,7 @@ public:
         });
     }
 
+    //uhhh ohhh moving hard
     T pop() {
         std::unique_lock<std::mutex> lock(mutex);
 
