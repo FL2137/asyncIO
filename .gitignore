@@ -39,3 +39,7 @@ json.hpp
 
 #txt's
 *.txt
+
+
+#misc
+main
