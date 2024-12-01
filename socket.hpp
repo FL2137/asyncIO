@@ -42,12 +42,11 @@ namespace asyncio {
                 int id = fd;
                 epoll_read_event.data.u32 = id;
 
-                Token impl;
+                Token *impl = new Token();
+                impl->callback = std::bind(&socket::read_impl, this);
+                impl->name = "ReadImpl." + std::to_string(fd);
 
-                impl.callback = std::bind(&socket::read_impl, this);
-                impl.name = "ReadImpl." + std::to_string(fd);
-
-                executor.register_epoll_handler(std::move(impl), id);
+                executor.register_epoll_handler(impl, id);
                 executor.register_epoll(fd, epoll_read_event, "oneshot async_read_some");
 
             }
@@ -57,10 +56,10 @@ namespace asyncio {
                 this->read_size = size;
                 this->read_callback = callback;
                 
-                Token impl;
+                Token *impl = new Token();
 
-                impl.callback = std::bind(&socket::read_impl, this);
-                impl.name = "ReadImpl." + std::to_string(fd);
+                impl->callback = std::bind(&socket::read_impl, this);
+                impl->name = "ReadImpl." + std::to_string(fd);
 
                 
                 epoll_read_event.events = EPOLLIN | EPOLLET;
@@ -70,7 +69,7 @@ namespace asyncio {
                 executor.register_epoll(fd, epoll_read_event, "async_read");
 
 
-                executor.register_epoll_handler(std::move(impl), fd);
+                executor.register_epoll_handler(impl, fd);
             }
 
             void setup(int fd) {
@@ -117,15 +116,15 @@ namespace asyncio {
 
                 executor.register_epoll(fd, epoll_write_event, "socket async_write_some");
 
-                Token impl;
-                impl.callback = std::bind(&socket::write_impl, this);
-                impl.name = "WriteImpl." + std::to_string(fd);
+                Token *impl = new Token();
+                impl->callback = std::bind(&socket::write_impl, this);
+                impl->name = "WriteImpl." + std::to_string(fd);
                 
-                executor.register_epoll_handler(std::move(impl), id);
+                executor.register_epoll_handler(impl, id);
             }   
 
-            void enqueue(Token&& callback) const {
-                executor.enqueue_callback(std::move(callback));
+            void enqueue(Token* callback) const {
+                executor.enqueue_callback(callback);
             }
 
         private:
@@ -136,10 +135,10 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Read error");
                 }
-                ReadToken rt(read_callback);
-                rt.set_data(error, result);
-                rt.name = "ReadToken." + std::to_string(fd);
-                executor.enqueue_callback(std::move(rt));
+                ReadToken *rt = new ReadToken(read_callback);
+                rt->set_data(error, result);
+                rt->name = "ReadToken." + std::to_string(fd);
+                executor.enqueue_callback(rt);
             }
 
             void write_impl() {
@@ -148,10 +147,10 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Write error");
                 }
-                WriteToken wt(write_callback);
-                wt.set_data(error, result);
-                wt.name = "WriteToken." + std::to_string(fd);
-                executor.enqueue_callback(std::move(wt));
+                WriteToken *wt = new WriteToken(write_callback);
+                wt->set_data(error, result);
+                wt->name = "WriteToken." + std::to_string(fd);
+                executor.enqueue_callback(wt);
             }
 
             
