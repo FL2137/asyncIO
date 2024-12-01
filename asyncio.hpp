@@ -10,12 +10,12 @@ namespace asyncio {
 
     void async_write(const asyncio::tcp::socket &socket, char *buffer, int size, WriteCallback callback) {
 
-        Token impl_token;
+        Token *impl_token = new Token();
         int sfd = socket.fd;
 
-        impl_token.name = "write_impl_token";
+        impl_token->name = "write_impl_token";
 
-        impl_token.callback = [&, sfd, buffer, size, callback]() {
+        impl_token->callback = [&, sfd, buffer, size, callback]() {
 
             asyncio::error error;
 
@@ -24,21 +24,21 @@ namespace asyncio {
                 error.set_error_message("Write error: " + std::to_string(errno));
             }
 
-            WriteToken write_token(callback);
-            write_token.name = "write_token";
-            write_token.set_data(error, result);
-            socket.enqueue(std::move(write_token));
+            WriteToken *write_token = new WriteToken(callback);
+            write_token->name = "write_token";
+            write_token->set_data(error, result);
+            socket.enqueue(write_token);
         };
 
-        socket.enqueue(std::move(impl_token));
+        socket.enqueue(impl_token);
     }
 
     template<typename Acceptor, typename Socket> 
     void async_accept_one(const Acceptor &acceptor, Socket &socket, AcceptCallback callback) {
         std::cout << "asyncio::async_accept_one() \n";
-        Token impl_token;
-        impl_token.name = "accept_one_impl_token";
-        impl_token.callback = [&, callback] {
+        Token *impl_token = new Token();
+        impl_token->name = "accept_one_impl_token";
+        impl_token->callback = [&, callback] {
             asyncio::error error;
             
             sockaddr_in remote_endpoint;
@@ -60,14 +60,14 @@ namespace asyncio {
             }
             socket.setup(result_fd);
 
-            AcceptToken accept_token;
-            accept_token.name = "accept_one_token";
-            accept_token.set_data(error);
+            AcceptToken *accept_token = new AcceptToken(callback);
+            accept_token->name = "accept_one_token";
+            accept_token->set_data(error);
 
-            acceptor.enqueue(std::move(accept_token));
+            acceptor.enqueue(accept_token);
         };
 
-        acceptor.enqueue(std::move(impl_token));
+        acceptor.enqueue(impl_token);
     }
 
     template<typename Reader>
