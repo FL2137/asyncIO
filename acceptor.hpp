@@ -44,11 +44,11 @@ namespace tcp {
                 
                 executor.register_epoll(fd, epoll_accept_event, "acceptor const");
  
-                Token impl_token;
-                impl_token.callback = std::bind(&acceptor::implementation, this);
-                impl_token.name = "AcceptImplem";
+                Token *impl_token = new Token();
+                impl_token->callback = std::bind(&acceptor::implementation, this);
+                impl_token->name = "AcceptImplem";
 
-                executor.register_epoll_handler(std::move(impl_token), id);
+                executor.register_epoll_handler(impl_token, id);
             }
         }
 
@@ -62,8 +62,8 @@ namespace tcp {
             this->tcp_socket = &socket;
         }
 
-        void enqueue(Token&& token) const {
-            executor.enqueue_callback(std::move(token));
+        void enqueue(Token *token) const {
+            executor.enqueue_callback(token);
         }
 
         void implementation() {
@@ -82,11 +82,11 @@ namespace tcp {
                 }
                 tcp_socket->setup(newfd);
             }            
-            AcceptToken at;
-            at.name = "AcceptToken." + std::to_string(newfd);
-            at.callback = accept_callback;
-            at.set_data(error);
-            executor.enqueue_callback(std::move(at));
+            AcceptToken *at = new AcceptToken();
+            at->name = "AcceptToken." + std::to_string(newfd);
+            at->callback = accept_callback;
+            at->set_data(error);
+            executor.enqueue_callback(at);
         }
 
 
