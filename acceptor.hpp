@@ -78,7 +78,7 @@ namespace tcp {
             else {
                 //set the socket descriptor to be nonblocking
                 if(fcntl(newfd, F_SETFL, fcntl(newfd, F_GETFL) | O_NONBLOCK) == -1) {
-                    std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
+                    //std::cout << "ERROR SETTING NONBLOCK ON SOCKET FD";
                 }
                 tcp_socket->setup(newfd);
             }            
