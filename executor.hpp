@@ -87,6 +87,7 @@ public:
             //std::cout << "REGISTERED: " << event.data.fd << std::endl;
             return true;
         }
+        
     }
 
     void register_epoll_handler(Token *callback, int id) {
@@ -95,15 +96,12 @@ public:
 
     void run_thread(Token *callback) {
         std::thread worker_thread(&Token::call, callback);
-        std::cout << "run_thread() for " << callback->name << std::endl;
         worker_thread.detach();
     }
     
 
     void enqueue_callback(Token* callback) {
-        std::cout << "queue size: " << queue.size() << std::endl;
         queue.push(callback);
-        std::cout << "queue size: " << queue.size() << std::endl;
     }
 
 private:
