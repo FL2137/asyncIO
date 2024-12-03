@@ -14,11 +14,12 @@ def test_accept():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     addr = (ADDRESS, PORT)
     s.connect(("127.0.0.1", 5001))
-    msg = "hejka :3"
-    s.send(msg)
+    msg = "hello from test_file.py!"
+    s.send(msg.encode())
     rcv = s.recv(1024)
-    print(rcv)
-    s.close()
+    rcv = rcv.rstrip(rcv)
+    print(str(rcv))
+    #s.close()
     return 1
 
 
