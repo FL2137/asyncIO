@@ -74,7 +74,6 @@ namespace asyncio {
 
             void setup(int fd) {
                 this->fd = fd;
-                std::cout << "SOCKET SETUP FD: " << fd << "\n";
                 epoll_read_event.events = EPOLLIN | EPOLLET;
                 epoll_read_event.data.fd = fd;
                 epoll_read_event.data.ptr = read_buffer;
@@ -129,7 +128,6 @@ namespace asyncio {
 
         private:
             void read_impl() {
-                std::cout << "READ IMPLE CALLED\n";
                 asyncio::error error;
                 int result = read(fd,  read_buffer, read_size);
                 if(result == -1) {
