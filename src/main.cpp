@@ -72,7 +72,8 @@ class tcp_connection {
 
 public:
     tcp_connection(asyncio::executor& exec): socket(exec) {
-        buffer = new char[1024];
+        read_buffer = new char[1024]{0};
+        write_buffer = new char[1024]{0};
     }
     typedef std::shared_ptr<tcp_connection> pointer;
 
@@ -83,7 +84,6 @@ public:
 
     void run() {
         do_read();
-        std::cout << "RUN LOL\n";
     }
 
     asyncio::tcp::socket& get_socket() {
@@ -91,32 +91,24 @@ public:
     }
 
     void do_read() {
-        socket.async_read(buffer, 1024, [&, this](asyncio::error error, int nbytes) {
+        socket.async_read(read_buffer, 1024, [&, this](asyncio::error error, int nbytes) {
             if(error.isError()){
                 std::cout << "ERROR IN READ CALL BACK\n";
 
             }
-            std::cout.write(buffer, strlen(buffer)) << std::endl;
-            for(int i =0; i < strlen(buffer); i++) {
-                buffer[i] = toupper(buffer[i]);
+            std::cout << "przeczytano: ";
+            std::cout.write(read_buffer, strlen(read_buffer)) << std::endl;
+            for(int i =0; i < strlen(read_buffer); i++) {
+                write_buffer[i] = toupper(read_buffer[i]);
             }
+            memset(read_buffer, 0, 1024);
             do_write();
         });
-        // asyncio::async_read_some(socket, buffer, 1024, [&](asyncio::error error, int nbytes) {
-        //     if(error.isError()){
-        //         std::cout << error.what() << std::endl;
-
-        //     }
-        //     std::cout.write(buffer, strlen(buffer)) << std::endl;
-        //     for(int i =0; i < strlen(buffer); i++) {
-        //         buffer[i] = toupper(buffer[i]);
-        //     }
-        //     do_write();
-        // });
+      
     }
 
     void do_write() {
-        asyncio::async_write(socket, buffer, 1024, [&](asyncio::error error, int nbytes) {
+        asyncio::async_write(socket, write_buffer, 1024, [&](asyncio::error error, int nbytes) {
             if(error.isError()) {
                 std::cout << error.what() << std::endl;
             }
@@ -130,7 +122,8 @@ private:
 
 
 private:
-    char *buffer = nullptr;
+    char *read_buffer = nullptr;
+    char *write_buffer = nullptr;
     asyncio::tcp::socket socket;
 };
 
@@ -141,8 +134,6 @@ public:
         this->endpoint = host_endpoint;
         start_accepting();
     }   
-
-
 
     void start_accepting() {
 
@@ -166,7 +157,6 @@ public:
             std::cout << error.what() << std::endl;
             return;
         } 
-        std::cout << "accept_handle\n";
         newcon->run();
         connections.push_back(newcon);
         start_accepting();
@@ -226,48 +216,62 @@ int bindListen() {
 #include "http.hpp"
 #include <fstream>
 
-
-int main() {
-using namespace asyncio;
-using namespace std::string_literals;
-    std::ifstream http_request_sample("./samplehttp.txt", std::ios::binary);
-
-    
-
-
-    std::string whole = ""s;
-    std::string line = ""s;
-    while(std::getline(http_request_sample, line)) {
-        whole += line;
+class MyToken : public asyncio::Task {
+public:
+    MyToken(std::string name) {
+        m_name = name;
     }
 
-    std::cout << whole << std::endl;
-    http::request request();
-
-    for(int i = 0 ;i < whole.size() -1; i++) {
-        if(whole[i] == '\r' && whole[i+1] == '\n') {
-            std::cout << "xd\n";
+    MyToken(std::string _name, asyncio::ReadCallback completion_handler) {
+        this->m_name = _name;
+        m_completion_handler = completion_handler;
+    }
+    
+    void operator()() {
+        for(int x {0} ; x< 3;x++) {
+            std::cout << m_name << std::endl;
         }
     }
+    // Params for the Tasks job
+    char *buffer = nullptr;
+    int offset = 0;
+    int target_fd = 0;
 
+    asyncio::ReadCallback m_completion_handler = {};
+};
 
+class file_parser_program {
 
+private:
 
+public:
+    file_parser_program(asyncio::executor &executor) {
+        fd = open("./test/bigfile.bin", O_RDONLY | O_LARGEFILE);
+        read_buffer = new char[4098];
+        
+    }
 
+    void start_parsing() {
 
+    }
 
+    int fd;
+    char *read_buffer = nullptr;
+};
 
+//asyncio::tcp::endpoint ep(5001);
 
+//program prog(executor, ep);
 
-
-    return 3;
+int main() {
     int pid = getpid();
-    std::cout << "PID: " << pid << std::endl;
     asyncio::executor executor;
+
     asyncio::tcp::endpoint ep(5001);
-    asyncio::tcp::socket socket(executor);
+        
     program prog(executor, ep);
 
-    executor.run();
+
+    executor.hijack();
     return 0;
 }

@@ -6,16 +6,16 @@
 #include <functional>
 #include "executor.hpp"
 #include <sys/ioctl.h>
-
+#include "epoll_wrapper.hpp"
 
 namespace asyncio {
      namespace tcp {
-
         class socket {
-            typedef std::function<void(asyncio::error, int)> AsyncCallback;
+           using AsyncCallback = std::function<void(asyncio::error, int)>;
         public:
 
             socket(asyncio::executor &exec): executor(exec) {
+                // m_epoll = exec.get_epoll();
             }
 
             ~socket() {
@@ -28,13 +28,12 @@ namespace asyncio {
                 this->read_buffer = buffer;
                 this->read_size = size;
 
-                if(executor.register_epoll(fd, epoll_read_event, "") == false ) {
+                if(m_epoll->register_event(fd, epoll_read_event, "") == false ) {
                     if(errno == EEXIST) {
-                        executor.epoll_rearm(fd, epoll_read_event);
+                        m_epoll->rearm(fd, epoll_read_event);
                         return;
                     }
                 }
-
 
                 epoll_read_event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
                 epoll_read_event.data.fd = fd;
@@ -42,13 +41,12 @@ namespace asyncio {
                 int id = fd;
                 epoll_read_event.data.u32 = id;
 
-                Token *impl = new Token();
-                impl->callback = std::bind(&socket::read_impl, this);
-                impl->name = "ReadImpl." + std::to_string(fd);
+                Task *impl = new Task();
+                impl->m_completion_handler = std::bind(&socket::read_impl, this);
+                impl->m_name = "ReadImpl." + std::to_string(fd);
 
-                executor.register_epoll_handler(impl, id);
-                executor.register_epoll(fd, epoll_read_event, "oneshot async_read_some");
-
+                m_epoll->register_event(fd, epoll_read_event, "oneshot async_read_some");
+                m_epoll->register_handler(impl, id);
             }
 
             void async_read(char *buffer, int size, ReadCallback callback) {
@@ -56,20 +54,19 @@ namespace asyncio {
                 this->read_size = size;
                 this->read_callback = callback;
                 
-                Token *impl = new Token();
+                Task *impl = new Task();
 
-                impl->callback = std::bind(&socket::read_impl, this);
-                impl->name = "ReadImpl." + std::to_string(fd);
+                impl->m_completion_handler = std::bind(&socket::read_impl, this);
+                impl->m_name = "ReadImpl." + std::to_string(fd);
 
                 
                 epoll_read_event.events = EPOLLIN | EPOLLET;
                 epoll_read_event.data.fd = fd;
                 epoll_read_event.data.u32 = fd;
 
-                executor.register_epoll(fd, epoll_read_event, "async_read");
 
-
-                executor.register_epoll_handler(impl, fd);
+                m_epoll->register_event(fd, epoll_read_event, "async_read");
+                m_epoll->register_handler(impl, fd);
             }
 
             void setup(int fd) {
@@ -82,7 +79,7 @@ namespace asyncio {
                 
                 
                 // executor.register_epoll(id, epoll_read_event, "socket setup");
-                // Token *t = new Token();
+                // Task *t = new Task();
                 // t->name = "temp read handler";
                 // t->callback = []() {
                 //     std::cout << "ODCZYTANIE\n";
@@ -99,7 +96,7 @@ namespace asyncio {
                     epoll_write_event.data.fd = fd;
                     epoll_write_event.data.ptr = write_buffer;
 
-                    executor.epoll_rearm(fd, epoll_write_event);
+                    m_epoll->rearm(fd, epoll_write_event);
                     return;
                 }
 
@@ -113,17 +110,17 @@ namespace asyncio {
                 int id = -fd;
                 epoll_write_event.data.u32 = id;
 
-                executor.register_epoll(fd, epoll_write_event, "socket async_write_some");
+                m_epoll->register_event(fd, epoll_write_event, "socket async_write_some");
 
-                Token *impl = new Token();
-                impl->callback = std::bind(&socket::write_impl, this);
-                impl->name = "WriteImpl." + std::to_string(fd);
+                Task *impl = new Task();
+                impl->m_completion_handler = std::bind(&socket::write_impl, this);
+                impl->m_name = "WriteImpl." + std::to_string(fd);
                 
-                executor.register_epoll_handler(impl, id);
+                m_epoll->register_handler(impl, id);
             }   
 
-            void enqueue(Token* callback) const {
-                executor.enqueue_callback(callback);
+            void enqueue(Task* callback) const {
+                executor.enqueue_task(callback);
             }
 
         private:
@@ -133,10 +130,10 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Read error");
                 }
-                ReadToken *rt = new ReadToken(read_callback);
+                ReadTask *rt = new ReadTask(read_callback);
                 rt->set_data(error, result);
-                rt->name = "ReadToken." + std::to_string(fd);
-                executor.enqueue_callback(rt);
+                rt->m_name = "ReadTask." + std::to_string(fd);
+                executor.enqueue_task(rt);
             }
 
             void write_impl() {
@@ -145,10 +142,10 @@ namespace asyncio {
                 if(result == -1) {
                     error.set_error_message("Write error");
                 }
-                WriteToken *wt = new WriteToken(write_callback);
+                WriteTask *wt = new WriteTask(write_callback);
                 wt->set_data(error, result);
-                wt->name = "WriteToken." + std::to_string(fd);
-                executor.enqueue_callback(wt);
+                wt->m_name = "WriteTask." + std::to_string(fd);
+                executor.enqueue_task(wt);
             }
 
             
@@ -164,13 +161,14 @@ namespace asyncio {
 
         private:
             asyncio::executor &executor;
+            std::shared_ptr<asyncio::epoll_wrapper> m_epoll;
+
             tcp::endpoint ep;
             char *read_buffer;
             char *write_buffer;
             int read_size;
             int write_size;
         };
-
     }
 };
 

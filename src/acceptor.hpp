@@ -5,15 +5,17 @@
 #include "endpoint.hpp"
 #include "error.hpp"
 #include "socket.hpp"
+#include "epoll_wrapper.hpp"
 #include <cstdlib>
 #include <fcntl.h>
 
 namespace asyncio {
 namespace tcp {
-    class acceptor {
 
+    class acceptor {
     public:
         acceptor(asyncio::executor &exec, const tcp::endpoint &local_endpoint, bool register_flag = false) : executor(exec) {
+
             fd = ::socket(AF_INET, SOCK_STREAM, 0);
 
             if(fd == -1) {
@@ -42,14 +44,15 @@ namespace tcp {
                 int id = fd;
                 epoll_accept_event.data.u32 = id;
                 
-                executor.register_epoll(fd, epoll_accept_event, "acceptor const");
- 
-                Token *impl_token = new Token();
-                impl_token->callback = std::bind(&acceptor::implementation, this);
-                impl_token->name = "AcceptImplem";
+                m_epoll->register_event(fd, epoll_accept_event, "Acceptor::AcceptEvent");
+                Task *impl_token = new Task();
+                impl_token->m_completion_handler = std::bind(&acceptor::implementation, this);
+                impl_token->m_name = "AcceptImpl";
 
-                executor.register_epoll_handler(impl_token, id);
+                m_epoll->register_handler(impl_token, id);
             }
+
+            std::cout << "Acceptor constructed.\n";
         }
 
         ~acceptor() {
@@ -57,15 +60,16 @@ namespace tcp {
             close(fd);
         }
 
-        void async_accept(tcp::socket &socket, AcceptCallback callback) {
+        void async_accept(asyncio::tcp::socket &socket, AcceptCallback callback) {
             accept_callback = callback;
             this->tcp_socket = &socket;
         }
 
-        void enqueue(Token *token) const {
-            executor.enqueue_callback(token);
+        void enqueue(Task *token) const {
+            executor.enqueue_task(token);
         }
 
+private:
         void implementation() {
             socklen_t socklen;
             sockaddr_in remote_endpoint;
@@ -82,23 +86,37 @@ namespace tcp {
                 }
                 tcp_socket->setup(newfd);
             }            
-            AcceptToken *at = new AcceptToken();
-            at->name = "AcceptToken." + std::to_string(newfd);
-            at->callback = accept_callback;
+            AcceptTask *at = new AcceptTask();
+            at->m_name = "AcceptToken." + std::to_string(newfd);
+            at->m_completion_handler = accept_callback;
             at->set_data(error);
-            executor.enqueue_callback(at);
+            executor.enqueue_task(at);
         }
 
+        void register_write(const WriteCallback& write_handler) {
+
+        }
+
+        void register_read(const ReadCallback& read_handler) {
+
+        }
+
+        void create_epoll_instance() {
+            m_epoll = std::make_shared<epoll_wrapper>();            
+            executor.run_epoll_instance(m_epoll);
+        }
 
     public:
         int fd;
     private:
-        Token *impl_callback;
+        Task *impl_callback;
         asyncio::tcp::endpoint local_endpoint;
         AcceptCallback accept_callback;
         epoll_event epoll_accept_event;
         asyncio::executor &executor;
-        tcp::socket *tcp_socket;
+        std::shared_ptr<epoll_wrapper> m_epoll;
+
+        asyncio::tcp::socket *tcp_socket;
         int n_acceptable_connections = 4;
     };
 }

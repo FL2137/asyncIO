@@ -22,7 +22,7 @@ enum EVENT_TYPE {
 class event {
 public: 
 
-    event(std::string event_name, Token event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
+    event(std::string event_name, Task event_handler, EVENT_TYPE event_type = EVENT_TYPE::SOCKET_IO) {
         this->name = event_name;
         this->callback = event_handler;
         this->type = event_type;
@@ -42,7 +42,7 @@ public:
 
     void run() {
         status = WORKING;
-        callback.call();
+        callback();
     }
 
     operator bool() const{
@@ -51,11 +51,11 @@ public:
         return false;
     }
     
-    void set_token(std::shared_ptr<Token> new_token) {
-        this->token = token;
+    void set_task(std::shared_ptr<Task> new_task) {
+        this->m_task = new_task;
     }
 
-    std::shared_ptr<Token> token;
+    std::shared_ptr<Task> m_task;
 
 public:
 
@@ -69,7 +69,7 @@ private:
     asyncio::error child_error;
     int child_nbytes = -1;
 
-    Token callback;
+    asyncio::Task callback;
     EVENT_TYPE type;
 
 };

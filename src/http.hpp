@@ -11,14 +11,14 @@ enum METHOD {
     GET = 0,
     POST,
     DELETE,
-
 };
 
 class request {
 
 public:
 
-    request(const std::string &request_string){
+    request(const std::string &request_string)
+    {
         std::string line;
     }
 
@@ -35,7 +35,8 @@ class response {
 
 class parser {
 
-    bool parse(const std::string &message, std::string &result) {
+    bool parse(const std::string &message, std::string &result)
+    {
 
     }
 
